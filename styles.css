@@ -442,3 +442,37 @@ html[data-theme="light"] .login-screen{background:#f3ece4}
   .hero-panel,.fiscal-banner{display:flex}
   .hero-panel:before,.fiscal-banner:before{display:none}
 }
+
+
+/* Modules Discord / RH / déclarations */
+.quick-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.quick-card{display:flex;flex-direction:column;gap:6px;text-align:left;padding:17px;border:1px solid var(--line);border-radius:12px;background:var(--surface-soft);color:var(--text)}
+.quick-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.quick-card strong{font-size:12px;color:var(--text-strong)}
+.quick-card span{font-size:9px;color:var(--muted);line-height:1.45}
+.announcement-card{padding:16px;border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--surface-soft);border-radius:10px}
+.announcement-card strong{color:var(--text-strong);font-size:12px}.announcement-card p{color:var(--muted);font-size:10px;margin:7px 0 0;line-height:1.5}
+.personal-stat{display:flex;flex-direction:column;gap:5px}.personal-stat span{font-size:10px;color:var(--muted)}.personal-stat strong{font-size:30px;color:var(--text-strong)}.personal-stat small{font-size:9px;color:var(--muted)}
+.filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.filter-grid label{display:grid;gap:6px;font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.filter-grid select{height:38px;border-radius:8px;border:1px solid var(--line-strong);background:var(--surface-soft);color:var(--text);padding:0 10px}
+.empty-state{display:grid;place-items:center;min-height:170px;text-align:center;padding:25px;border:1px dashed var(--line-strong);border-radius:12px;background:var(--surface-soft)}
+.empty-state strong{color:var(--text-strong);font-size:13px}.empty-state p{max-width:620px;color:var(--muted);font-size:10px;line-height:1.6;margin:7px 0 0}
+.integration-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.integration-summary article{padding:17px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.integration-summary span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:800}.integration-summary strong{display:block;font-size:22px;color:var(--text-strong);margin:5px 0}.integration-summary small{font-size:9px;color:var(--muted)}
+.source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.source-card{padding:13px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);display:flex;flex-direction:column;gap:4px}
+.source-card b{font-size:10px;color:var(--text-strong)}.source-card span{font-size:9px;color:var(--muted)}
+.rule-list{display:grid;gap:8px}.rule-list>div{display:grid;grid-template-columns:220px 1fr;gap:18px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}.rule-list strong{font-size:10px;color:var(--text-strong)}.rule-list span{font-size:9px;color:var(--muted)}
+
+html[data-theme="dark"] .quick-card,
+html[data-theme="dark"] .announcement-card,
+html[data-theme="dark"] .empty-state,
+html[data-theme="dark"] .source-card,
+html[data-theme="dark"] .rule-list>div,
+html[data-theme="dark"] .integration-summary article{background:#081824;border-color:#174966}
+html[data-theme="dark"] .filter-grid select{background:#061520;border-color:#1c5878;color:#fff}
+
+@media(max-width:1000px){.quick-grid,.source-grid{grid-template-columns:repeat(2,1fr)}.filter-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.quick-grid,.source-grid,.filter-grid,.integration-summary{grid-template-columns:1fr}.rule-list>div{grid-template-columns:1fr}}
