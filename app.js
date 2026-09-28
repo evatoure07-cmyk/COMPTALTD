@@ -3,6 +3,10 @@ const STORAGE_KEY = 'ltd_sandy_compta_v1';
 const SESSION_KEY = 'ltd_sandy_compta_session';
 const THEME_KEY = 'ltd_sandy_theme';
 const CLOUD_ROW_ID = 'main';
+const DIRECTION_CODE_KEY = 'ltd_direction_code';
+const STAFF_SESSION_KEY = 'ltd_staff_session';
+const STAFF_PROFILE_KEY = 'ltd_staff_profile';
+const COMPTA_AUTH_ENDPOINT = 'https://mlelowyvwvlrunhnivzf.supabase.co/functions/v1/compta-auth';
 const SUPABASE_PROJECT_URL = 'https://mlelowyvwvlrunhnivzf.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fCEEBzCjmZKfyz8JIgTLqw_AUViyHeZ';
 
@@ -47,6 +51,28 @@ const categories = {
 
 const defaultDeductible = new Set(['raw-materials','vehicle','rent','vehicle-purchase','food','lawyer','accountant','donation','weekly-bonus','monthly-bonus']);
 const categoryLabels = Object.fromEntries([...categories.income, ...categories.expense, ['subsidy','Subvention'], ['tax','Impôt payé']]);
+const staffRoleLabels = {
+  patron:'Patron', copatron:'Co-Patronne',
+  responsable_vente:'Responsable vente',
+  vendeur_novice:'Vendeur novice',
+  vendeur_intermediaire:'Vendeur intermédiaire',
+  vendeur_experimente:'Vendeur expérimenté',
+  responsable_pompiste:'Responsable pompiste',
+  pompiste_novice:'Pompiste novice',
+  pompiste_intermediaire:'Pompiste intermédiaire',
+  pompiste_experimente:'Pompiste expérimenté',
+  chef_equipe:'Chef d’équipe', livreur:'Livreur'
+};
+const employeeRoleOptions = [
+  ['responsable_vente','Responsable vente'],
+  ['vendeur_novice','Vendeur novice'],
+  ['vendeur_intermediaire','Vendeur intermédiaire'],
+  ['vendeur_experimente','Vendeur expérimenté'],
+  ['responsable_pompiste','Responsable pompiste'],
+  ['pompiste_novice','Pompiste novice'],
+  ['pompiste_intermediaire','Pompiste intermédiaire'],
+  ['pompiste_experimente','Pompiste expérimenté']
+];
 
 let state = structuredClone(DEFAULT_STATE);
 let currentPage = 'dashboard';
@@ -77,6 +103,46 @@ function initTheme(){
 }
 function toggleTheme(){
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+}
+
+
+function directionCode(){ return sessionStorage.getItem(DIRECTION_CODE_KEY) || ''; }
+function staffSession(){
+  try{return JSON.parse(sessionStorage.getItem(STAFF_SESSION_KEY)||'null')}catch{return null}
+}
+function staffProfile(){
+  try{return JSON.parse(sessionStorage.getItem(STAFF_PROFILE_KEY)||'null')}catch{return null}
+}
+function isDirectionMode(){ return Boolean(directionCode()); }
+function rolePole(role){
+  if(String(role||'').includes('pompiste')) return 'Pôle Pompistes';
+  if(String(role||'').includes('vendeur') || role==='responsable_vente') return 'Pôle Vente';
+  if(['patron','copatron'].includes(role)) return 'Direction';
+  return 'Équipe';
+}
+async function comptaApi(action,payload={}){
+  const session=staffSession();
+  const headers={'Content-Type':'application/json',apikey:SUPABASE_PUBLISHABLE_KEY};
+  if(session?.access_token) headers.Authorization='Bearer '+session.access_token;
+  const body={action,...payload};
+  if(isDirectionMode()) body.direction_code=directionCode();
+  const res=await fetch(COMPTA_AUTH_ENDPOINT,{method:'POST',headers,body:JSON.stringify(body)});
+  const data=await res.json().catch(()=>({}));
+  if(!res.ok || data.error) throw new Error(data.error||'Erreur serveur');
+  return data;
+}
+function applyAccessMode(){
+  const direction=isDirectionMode();
+  document.body.dataset.access=direction?'direction':'employee';
+  const directionPages=new Set(['payroll','operations','fiscal','archives','integrations','settings']);
+  $('.nav-item[data-page]').forEach(b=>{
+    if(!direction && directionPages.has(b.dataset.page)) b.classList.add('hidden');
+    else b.classList.remove('hidden');
+  });
+  if($('#createEmployeeAccountBtn')) $('#createEmployeeAccountBtn').classList.toggle('hidden',!direction);
+  if($('#refreshStaffBtn')) $('#refreshStaffBtn').classList.toggle('hidden',!direction);
+  if($('#cardExpenseBtn')) $('#cardExpenseBtn').classList.toggle('hidden',!direction);
+  if($('#addEmployeeBtn')) $('#addEmployeeBtn').classList.toggle('hidden',!direction);
 }
 
 function mondayOf(date = new Date()) {
@@ -169,7 +235,7 @@ function showPage(page){
   const titles={dashboard:'Tableau de bord',myspace:'Mon espace',declarations:'Production',quotas:'Quotas de fabrication',activity:'Activité',service:'Prises de service',payroll:'Employés & salaires',garage:'Garage',operations:'Finances',fuel:'Essence',fiscal:'Fiscalité',archives:'Archives',integrations:'Discord & Logs',settings:'Paramètres État'}; $('#pageTitle').textContent=titles[page]||page; $('#sidebar').classList.remove('open'); renderAll();
 }
 
-function renderAll(){ refreshWeeks(); renderDashboard(); renderOperations(); renderPayroll(); renderFuel(); renderFiscal(); renderArchives(); renderProduction(); renderQuotas(); renderSettings(); }
+function renderAll(){ refreshWeeks(); renderDashboard(); renderOperations(); renderPayroll(); renderFuel(); renderFiscal(); renderArchives(); renderProduction(); renderQuotas(); renderSettings(); applyAccessMode(); if(currentPage==='payroll') loadStaffDirectory(); if(currentPage==='fuel') loadStations(); }
 function renderDashboard(){
   const c=calcWeek(); $('#heroWeek').textContent=formatWeek(c.id); $('#heroNet').textContent=money(c.net); $('#heroMargin').textContent=`Marge ${c.revenue>0?(c.net/c.revenue*100).toFixed(1):'0.0'} %`; $('#heroSummary').textContent=c.ops.length?`${c.ops.length} opération${c.ops.length>1?'s':''} enregistrée${c.ops.length>1?'s':''} sur la période.`:'Aucune donnée enregistrée sur cette semaine.';
   $('#kpiRevenue').textContent=money(c.revenue); $('#kpiRevenueSub').textContent=`${c.incomes.length} recette${c.incomes.length>1?'s':''}`; $('#kpiExpenses').textContent=money(c.expenseTotal); $('#kpiDeductible').textContent=`${money(c.deductible)} déductibles`; $('#kpiPayroll').textContent=money(c.payroll); $('#kpiPayrollRatio').textContent=`${c.payrollRatio.toFixed(1)} % du CA`; $('#kpiTax').textContent=money(c.tax.amount); $('#kpiTaxRate').textContent=`Taux ${c.tax.rate} %`;
@@ -309,6 +375,128 @@ function renderQuotas(){
   $$('[data-delete-quota]').forEach(b=>b.onclick=async()=>{if(confirm('Supprimer ce quota ?')){state.quotas=state.quotas.filter(q=>q.id!==b.dataset.deleteQuota);await saveState();renderAll();toast('Quota supprimé')}});
 }
 
+
+async function loadStaffDirectory(){
+  const box=$('#staffDirectory'); if(!box) return;
+  if(!isDirectionMode()){
+    const p=staffProfile();
+    box.innerHTML=p?`<div class="staff-card" data-self-profile><div class="staff-avatar">${esc((p.display_name||'?').slice(0,1))}</div><div><strong>${esc(p.display_name||'Mon compte')}</strong><span>${esc(staffRoleLabels[p.staff_role]||p.staff_role||'Employé')}</span></div><div class="staff-meta"><b>${esc(rolePole(p.staff_role))}</b><small>Mon compte</small></div></div>`:'<div class="empty-state"><strong>Compte employé</strong></div>';
+    return;
+  }
+  box.innerHTML='<div class="empty-state"><strong>Chargement des comptes…</strong></div>';
+  try{
+    const data=await comptaApi('list_staff');
+    const rows=data.employees||[];
+    box.innerHTML=rows.length?rows.map(p=>`<button type="button" class="staff-card" data-staff-id="${p.id}"><div class="staff-avatar">${esc((p.display_name||'?').slice(0,1))}</div><div><strong>${esc(p.display_name||'Sans nom')}</strong><span>@${esc(p.staff_username||'—')} · ${esc(staffRoleLabels[p.staff_role]||p.staff_role||'—')}</span></div><div class="staff-meta"><b>${esc(rolePole(p.staff_role))}</b><small>${esc(p.staff_status||'active')}</small></div></button>`).join(''):'<div class="empty-state"><strong>Aucun compte employé</strong><p>Crée le premier avec le bouton en haut.</p></div>';
+    $('[data-staff-id]').forEach(b=>b.onclick=()=>openEmployeeProfile(b.dataset.staffId));
+  }catch(e){box.innerHTML=`<div class="empty-state"><strong>Impossible de charger les comptes</strong><p>${esc(e.message)}</p></div>`;}
+}
+function createEmployeeAccountModal(){
+  if(!isDirectionMode()) return toast('Accès Direction requis','error');
+  const roles=employeeRoleOptions.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  openModal(`<span class="panel-kicker">DIRECTION</span><h3>Créer un compte employé</h3><form id="createStaffForm" class="form-grid">
+    <label class="span-2">Nom RP<input id="mStaffName" required placeholder="Prénom Nom"></label>
+    <label>Identifiant<input id="mStaffUsername" required placeholder="prenom.nom"></label>
+    <label>Mot de passe temporaire<input id="mStaffPassword" type="password" minlength="8" required placeholder="8 caractères minimum"></label>
+    <label class="span-2">Rôle<select id="mStaffRole">${roles}</select></label>
+    <label>ID Discord<input id="mStaffDiscord" placeholder="Optionnel"></label>
+    <label>Date d’embauche<input id="mStaffHire" type="date"></label>
+    <div class="modal-actions span-2"><button type="button" id="mCancel" class="btn ghost">Annuler</button><button class="btn primary" type="submit">Créer le compte</button></div>
+  </form>`,root=>{
+    $('#mCancel',root).onclick=closeModal;
+    $('#createStaffForm',root).onsubmit=async ev=>{
+      ev.preventDefault();
+      try{
+        await comptaApi('create_staff',{
+          display_name:$('#mStaffName',root).value.trim(),
+          username:$('#mStaffUsername',root).value.trim(),
+          password:$('#mStaffPassword',root).value,
+          staff_role:$('#mStaffRole',root).value,
+          discord_user_id:$('#mStaffDiscord',root).value.trim(),
+          hire_date:$('#mStaffHire',root).value||null
+        });
+        closeModal();toast('Compte employé créé');loadStaffDirectory();
+      }catch(e){toast(e.message,'error')}
+    };
+  });
+}
+async function openEmployeeProfile(id){
+  if(!isDirectionMode()) return;
+  try{
+    const data=await comptaApi('get_staff',{user_id:id});
+    const p=data.profile||{}, services=data.services||[], production=data.production||[], finance=data.finance||[], hr=data.hr||[];
+    $('#employeeProfileName').textContent=p.display_name||'Employé';
+    $('#employeeProfileSubtitle').textContent=(staffRoleLabels[p.staff_role]||p.staff_role||'Employé')+' · '+rolePole(p.staff_role);
+    $('#employeeProfileAvatar').textContent=(p.display_name||'?').slice(0,1).toUpperCase();
+    $('#employeeProfilePole').textContent=rolePole(p.staff_role);
+    $('#employeeProfileRole').textContent=staffRoleLabels[p.staff_role]||p.staff_role||'—';
+    $('#employeeProfileUsername').textContent='@'+(p.staff_username||'—');
+    const hours=services.reduce((n,x)=>n+Number(x.duration_seconds||0),0)/3600;
+    const ca=finance.filter(x=>x.direction==='income').reduce((n,x)=>n+Number(x.amount||0),0);
+    const prod=production.reduce((n,x)=>n+Number(x.quantity||0),0);
+    $('#employeeProfileHours').textContent=hours.toFixed(1)+' h';
+    $('#employeeProfileCA').textContent=money(ca);
+    $('#employeeProfileProduction').textContent=number(prod);
+    $('#employeeProfileInfo').innerHTML=[
+      ['Rôle',staffRoleLabels[p.staff_role]||p.staff_role||'—'],
+      ['Pôle',rolePole(p.staff_role)],
+      ['Identifiant',p.staff_username||'—'],
+      ['Discord',p.discord_username||p.discord_user_id||'Non relié'],
+      ['Embauche',p.hire_date||'—'],
+      ['Statut',p.staff_status||'active'],
+      ['Salaire fixe',money(p.salary_fixed||0)],
+      ['Commission',Number(p.salary_rate||0).toFixed(1)+' %']
+    ].map(([a,b])=>`<div><span>${esc(a)}</span><strong>${esc(b)}</strong></div>`).join('');
+    $('#employeeProfileHr').innerHTML=hr.length?hr.map(x=>`<div class="timeline-item"><strong>${esc(x.action||'Événement RH')}</strong><span>${formatDate(x.created_at)}</span></div>`).join(''):'<div class="empty-state"><strong>Aucun événement RH</strong></div>';
+    const activity=[...services.map(x=>({d:x.started_at,t:'Service',v:x.duration_seconds?Math.round(x.duration_seconds/60)+' min':'En cours'})),...finance.map(x=>({d:x.occurred_at,t:x.label||'Finance',v:money(x.amount)}))].sort((a,b)=>new Date(b.d)-new Date(a.d)).slice(0,15);
+    $('#employeeProfileActivity').innerHTML=activity.length?activity.map(x=>`<div class="timeline-item"><strong>${esc(x.t)}</strong><span>${esc(x.v)} · ${formatDate(x.d)}</span></div>`).join(''):'<div class="empty-state"><strong>Aucune activité synchronisée</strong></div>';
+    $('#editEmployeeProfileBtn').dataset.staffId=id;
+    showPage('employeeProfile');
+  }catch(e){toast(e.message,'error')}
+}
+async function loadStations(){
+  const box=$('#stationsGrid'); if(!box) return;
+  box.innerHTML='<div class="empty-state"><strong>Chargement des stations…</strong></div>';
+  try{
+    const data=await comptaApi('list_stations');
+    const rows=data.stations||[];
+    box.innerHTML=rows.map(st=>{
+      const cap=Number(st.capacity_liters||0),cur=Number(st.current_liters||0),pct=cap?Math.min(100,cur/cap*100):0,alert=cur<Number(st.alert_liters||0);
+      return `<article class="station-card ${alert?'alert':''}"><div class="station-card-head"><div><h4>${esc(st.name)}</h4><small>${st.pump_id?'Pompe '+esc(st.pump_id):'Pompe non reliée'}</small></div><span class="status ${alert?'danger':'ok'}">${alert?'ALERTE':'OK'}</span></div><div class="station-meter"><i style="width:${pct}%"></i></div><div class="station-meta"><span><strong>${number(cur)} L</strong> / ${number(cap)} L</span><span>${pct.toFixed(0)} %</span></div>${isDirectionMode()?`<div class="station-actions"><button class="text-btn" data-edit-station="${st.id}">Modifier</button></div>`:''}</article>`;
+    }).join('')||'<div class="empty-state"><strong>Aucune station</strong></div>';
+    $('[data-edit-station]').forEach(b=>b.onclick=()=>editStationModal(rows.find(x=>x.id===b.dataset.editStation)));
+  }catch(e){box.innerHTML=`<div class="empty-state"><strong>Stations indisponibles</strong><p>${esc(e.message)}</p></div>`;}
+}
+function editStationModal(st){
+  if(!st||!isDirectionMode()) return;
+  openModal(`<span class="panel-kicker">STATION</span><h3>${esc(st.name)}</h3><form id="stationEditForm" class="form-grid">
+    <label class="span-2">Nom<input id="mStName" value="${esc(st.name)}"></label>
+    <label>Stock actuel (L)<input id="mStCurrent" type="number" min="0" value="${Number(st.current_liters||0)}"></label>
+    <label>Capacité (L)<input id="mStCapacity" type="number" min="0" value="${Number(st.capacity_liters||0)}"></label>
+    <label>Seuil alerte (L)<input id="mStAlert" type="number" min="0" value="${Number(st.alert_liters||0)}"></label>
+    <label>N° pompe IG<input id="mStPump" value="${esc(st.pump_id||'')}"></label>
+    <div class="modal-actions span-2"><button type="button" id="mCancel" class="btn ghost">Annuler</button><button class="btn primary">Enregistrer</button></div>
+  </form>`,root=>{
+    $('#mCancel',root).onclick=closeModal;
+    $('#stationEditForm',root).onsubmit=async ev=>{ev.preventDefault();try{await comptaApi('update_station',{station_id:st.id,name:$('#mStName',root).value,current_liters:Number($('#mStCurrent',root).value),capacity_liters:Number($('#mStCapacity',root).value),alert_liters:Number($('#mStAlert',root).value),pump_id:$('#mStPump',root).value});closeModal();toast('Station mise à jour');loadStations()}catch(e){toast(e.message,'error')}};
+  });
+}
+function cardExpenseModal(){
+  openModal(`<span class="panel-kicker">CARTE GPLTD</span><h3>Déclarer une facture réglée par l’entreprise</h3><form id="cardExpenseForm" class="form-grid">
+    <label>Montant ($)<input id="mCardAmount" type="number" min="0.01" step="0.01" required></label>
+    <label>Catégorie<select id="mCardCategory"><option value="raw-materials">Matières premières</option><option value="vehicle">Frais véhicule</option><option value="food">Nourriture</option><option value="rent">Loyer / location</option><option value="decoration">Décoration</option><option value="other-expense">Autre</option></select></label>
+    <label>Fournisseur<input id="mCardSupplier" placeholder="Entreprise / personne"></label>
+    <label>N° facture<input id="mCardInvoice" placeholder="Optionnel"></label>
+    <label class="span-2">Raison<input id="mCardReason" placeholder="Ex : achat matières premières"></label>
+    <label>Déductible<select id="mCardDeductible"><option value="true">Oui</option><option value="false">Non</option></select></label>
+    <div></div>
+    <div class="modal-actions span-2"><button type="button" id="mCancel" class="btn ghost">Annuler</button><button class="btn primary">Enregistrer</button></div>
+  </form>`,root=>{
+    $('#mCancel',root).onclick=closeModal;
+    $('#cardExpenseForm',root).onsubmit=async ev=>{ev.preventDefault();const amount=Number($('#mCardAmount',root).value||0),category=$('#mCardCategory',root).value,supplier=$('#mCardSupplier',root).value.trim(),invoice=$('#mCardInvoice',root).value.trim(),reason=$('#mCardReason',root).value.trim(),deductible=$('#mCardDeductible',root).value==='true';try{await comptaApi('create_card_expense',{amount,category,supplier,invoice_number:invoice,reason,deductible});state.transactions.push({id:uid(),date:new Date().toISOString(),type:'expense',label:supplier?'Carte GPLTD — '+supplier:'Dépense Carte GPLTD',category,amount,deductible,note:[invoice&&'Facture '+invoice,reason].filter(Boolean).join(' · ')});await saveState();closeModal();renderAll();toast('Dépense GPLTD enregistrée')}catch(e){toast(e.message,'error')}};
+  });
+}
+
 function operationModal(){
   openModal(`<span class="panel-kicker">NOUVELLE ÉCRITURE</span><h3>Ajouter une opération</h3><form id="operationForm" class="form-grid"><label>Date<input id="mOpDate" type="datetime-local" required value="${new Date().toISOString().slice(0,16)}"></label><label>Type<select id="mOpType"><option value="income">Recette</option><option value="expense">Dépense</option><option value="subsidy">Subvention</option><option value="tax">Impôt payé</option></select></label><label class="span-2">Libellé<input id="mOpLabel" required placeholder="Ex : Vente boutique"></label><label>Catégorie<select id="mOpCategory"></select></label><label>Montant ($)<input id="mOpAmount" type="number" min="0" step="0.01" required></label><label id="mDedWrap">Déductible<select id="mOpDed"><option value="true">Oui</option><option value="false">Non</option></select></label><label class="span-2">Note<input id="mOpNote" placeholder="Optionnel"></label><div class="modal-actions span-2"><button type="button" class="btn ghost" id="mCancel">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div></form>`, root=>{
     const type=$('#mOpType',root),cat=$('#mOpCategory',root),ded=$('#mDedWrap',root); function fill(){const v=type.value; if(v==='income')cat.innerHTML=categories.income.map(([a,b])=>`<option value="${a}">${b}</option>`).join(''); else if(v==='expense')cat.innerHTML=categories.expense.map(([a,b])=>`<option value="${a}">${b}</option>`).join(''); else cat.innerHTML=`<option value="${v}">${v==='subsidy'?'Subvention':'Impôt payé'}</option>`; ded.classList.toggle('hidden',v!=='expense'); setDed();} function setDed(){if(type.value==='expense')$('#mOpDed',root).value=defaultDeductible.has(cat.value)?'true':'false';} type.onchange=fill;cat.onchange=setDed;fill(); $('#mCancel',root).onclick=closeModal; $('#operationForm',root).onsubmit=async e=>{e.preventDefault(); const typ=type.value;state.transactions.push({id:uid(),date:new Date($('#mOpDate',root).value).toISOString(),type:typ,label:$('#mOpLabel',root).value.trim(),category:cat.value,amount:Number($('#mOpAmount',root).value),deductible:typ==='expense'?$('#mOpDed',root).value==='true':false,note:$('#mOpNote',root).value.trim()});await saveState();closeModal();renderAll();toast('Opération enregistrée');};
@@ -341,13 +529,19 @@ function downloadJson(obj,name='ltd-sandy-comptabilite.json'){downloadBlob(JSON.
 function exportCsv(){const rows=[['date','type','libelle','categorie','montant','deductible','note'],...state.transactions.map(t=>[t.date,t.type,t.label,t.category,t.amount,t.deductible?'oui':'non',t.note||''])];downloadBlob(rows.map(r=>r.map(v=>`"${String(v??'').replaceAll('"','""')}"`).join(';')).join('\n'),'ltd-sandy-comptabilite.csv','text/csv;charset=utf-8')}
 
 function bindEvents(){
-  $('#loginForm').onsubmit=async e=>{e.preventDefault();if($('#accessCode').value.trim()!==ACCESS_CODE){$('#loginError').classList.remove('hidden');return}sessionStorage.setItem(SESSION_KEY,'1');$('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');await setupCloud();await loadState();renderAll()};
+  $('#loginForm').onsubmit=async e=>{e.preventDefault();const code=$('#accessCode').value.trim();if(code!==ACCESS_CODE){$('#loginError').classList.remove('hidden');return}sessionStorage.setItem(SESSION_KEY,'direction');sessionStorage.setItem(DIRECTION_CODE_KEY,code);sessionStorage.removeItem(STAFF_SESSION_KEY);sessionStorage.removeItem(STAFF_PROFILE_KEY);$('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');await setupCloud();await loadState();applyAccessMode();renderAll()};
+  $('#staffLoginForm').onsubmit=async e=>{e.preventDefault();const err=$('#staffLoginError');err.classList.add('hidden');try{const data=await comptaApi('login_staff',{username:$('#staffUsername').value.trim(),password:$('#staffPassword').value});sessionStorage.setItem(SESSION_KEY,'staff');sessionStorage.setItem(STAFF_SESSION_KEY,JSON.stringify(data.session));sessionStorage.setItem(STAFF_PROFILE_KEY,JSON.stringify(data.profile));sessionStorage.removeItem(DIRECTION_CODE_KEY);$('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');await loadState();applyAccessMode();showPage('myspace')}catch(ex){err.textContent=ex.message;err.classList.remove('hidden')}};
   $('#toggleCode').onclick=()=>{const i=$('#accessCode');i.type=i.type==='password'?'text':'password';$('#toggleCode').textContent=i.type==='password'?'Afficher':'Masquer'};
-  $('#logoutBtn').onclick=()=>{sessionStorage.removeItem(SESSION_KEY);location.reload()}; $('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
+  $('#logoutBtn').onclick=()=>{[SESSION_KEY,DIRECTION_CODE_KEY,STAFF_SESSION_KEY,STAFF_PROFILE_KEY].forEach(k=>sessionStorage.removeItem(k));location.reload()}; $('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
   $('#themeToggle').onclick=toggleTheme;
   $$('.nav-item[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page)); $$('[data-goto]').forEach(b=>b.onclick=()=>showPage(b.dataset.goto)); $('#weekSelect').onchange=renderAll; $('#quickAddBtn').onclick=operationModal;$('#addOperationBtn').onclick=operationModal;$('#opSearch').oninput=renderOperations;$('#opTypeFilter').onchange=renderOperations;$('#addEmployeeBtn').onclick=()=>employeeModal();
   if($('#newDeclarationBtn')) $('#newDeclarationBtn').onclick=declarationModal;
   if($('#newQuotaBtn')) $('#newQuotaBtn').onclick=quotaModal;
+  if($('#createEmployeeAccountBtn')) $('#createEmployeeAccountBtn').onclick=createEmployeeAccountModal;
+  if($('#refreshStaffBtn')) $('#refreshStaffBtn').onclick=loadStaffDirectory;
+  if($('#backToEmployeesBtn')) $('#backToEmployeesBtn').onclick=()=>showPage('payroll');
+  if($('#refreshStationsBtn')) $('#refreshStationsBtn').onclick=loadStations;
+  if($('#cardExpenseBtn')) $('#cardExpenseBtn').onclick=cardExpenseModal;
   $('#fuelLiters').oninput=fuelCalc;$('#fuelRate').onchange=fuelCalc;$('#fuelForm').onsubmit=async e=>{e.preventDefault();const x=fuelCalc();if(!x.liters)return;const id=uid(),date=new Date().toISOString(),client=$('#fuelClient').value.trim(),rate=$('#fuelRate').value,note=$('#fuelNote').value.trim();state.fuelOrders.push({id,date,client,liters:x.liters,cans:x.cans,price:x.price,total:x.total,rate,note});state.transactions.push({id:uid(),fuelOrderId:id,date,type:'income',label:`Essence — ${client}`,category:'fuel',amount:x.total,deductible:false,note:`${x.liters} L · ${x.cans} bidons${note?` · ${note}`:''}`});await saveState();e.target.reset();$('#fuelRate').value='normal';renderAll();toast('Commande essence enregistrée')};
   $('#closeWeekBtn').onclick=closeWeek;$('#backupBtn').onclick=()=>downloadJson(state,`ltd-sandy-backup-${isoDate(new Date())}.json`);$('#exportJsonBtn').onclick=()=>downloadJson(state);$('#exportCsvBtn').onclick=exportCsv;$('#importJsonInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());state=mergeState(raw);await saveState();renderAll();toast('Sauvegarde importée')}catch{toast('Fichier JSON invalide','error')}e.target.value=''};
   $('#generalSettingsForm').onsubmit=async e=>{e.preventDefault();Object.assign(state.settings,{initialBalance:Number($('#initialBalance').value),fuelCanLiters:Number($('#fuelCanLitersSetting').value),fuelNormalPrice:Number($('#fuelNormalPriceSetting').value),fuelPartnerPrice:Number($('#fuelPartnerPriceSetting').value),payrollWarn:Number($('#payrollWarnSetting').value),payrollMax:Number($('#payrollMaxSetting').value)});await saveState();renderAll();toast('Paramètres enregistrés')};
@@ -358,7 +552,8 @@ function bindEvents(){
 
 initTheme();
 bindEvents();
-if(sessionStorage.getItem(SESSION_KEY)==='1'){
+if(sessionStorage.getItem(SESSION_KEY)){
   $('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');
-  await setupCloud();await loadState();renderAll();
+  await setupCloud();await loadState();applyAccessMode();
+  if(sessionStorage.getItem(SESSION_KEY)==='staff') showPage('myspace'); else renderAll();
 }
