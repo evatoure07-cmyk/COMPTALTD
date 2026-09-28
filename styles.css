@@ -476,3 +476,19 @@ html[data-theme="dark"] .filter-grid select{background:#061520;border-color:#1c5
 
 @media(max-width:1000px){.quick-grid,.source-grid{grid-template-columns:repeat(2,1fr)}.filter-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.quick-grid,.source-grid,.filter-grid,.integration-summary{grid-template-columns:1fr}.rule-list>div{grid-template-columns:1fr}}
+
+
+/* Production & quotas */
+.production-feed,.quota-feed{display:grid;gap:8px}
+.production-row,.quota-row{display:flex;align-items:center;gap:14px;padding:12px 13px;border:1px solid var(--line);border-radius:10px;background:var(--surface-soft)}
+.production-row>div,.quota-main{flex:1;min-width:0}
+.production-row strong,.quota-row strong{display:block;color:var(--text-strong);font-size:11px}
+.production-row span,.quota-row span{display:block;color:var(--muted);font-size:9px;margin-top:3px;line-height:1.4}
+.production-row>b{color:var(--green);font-size:11px;white-space:nowrap}
+.quota-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto}
+.quota-numbers{text-align:right;min-width:100px}.quota-numbers b{display:block;color:var(--text-strong);font-size:11px}.quota-numbers small{color:var(--muted);font-size:9px}
+.quota-bar{height:7px;border-radius:999px;background:color-mix(in srgb,var(--line) 65%,transparent);overflow:hidden;margin-top:8px}
+.quota-bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:inherit}
+html[data-theme="dark"] .production-row,
+html[data-theme="dark"] .quota-row{background:#081824;border-color:#174966}
+@media(max-width:620px){.quota-row{grid-template-columns:1fr}.quota-numbers{text-align:left}}
