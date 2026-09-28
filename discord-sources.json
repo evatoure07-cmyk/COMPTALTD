@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "business": "LTD Sandy Shores",
+  "mode": "discord-first",
+  "role_sync": {
+    "on_duty_role_name": "service",
+    "on_role_add": "service_start",
+    "on_role_remove": "service_end"
+  },
+  "sources": [
+    {
+      "key": "logs_service",
+      "group": "rh",
+      "event_type": "service",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "logs_coffre",
+      "group": "finance",
+      "event_type": "vault",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "sortie_argent",
+      "group": "finance",
+      "event_type": "expense",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "logs_facture",
+      "group": "finance",
+      "event_type": "invoice",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "entree_argent",
+      "group": "finance",
+      "event_type": "income",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "logs_vehicules",
+      "group": "vehicles",
+      "event_type": "vehicle",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "paiement_station",
+      "group": "finance",
+      "event_type": "station_payment",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "notes_frais",
+      "group": "declarations",
+      "event_type": "expense_note",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "logs_quota",
+      "group": "rh",
+      "event_type": "quota",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "logs_paye",
+      "group": "finance",
+      "event_type": "payroll",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "rh_promotion",
+      "group": "rh",
+      "event_type": "promotion",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "rh_retrogradation",
+      "group": "rh",
+      "event_type": "demotion",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "rh_licenciement",
+      "group": "rh",
+      "event_type": "termination",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "rh_archive",
+      "group": "rh",
+      "event_type": "archive",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "suivi_rh",
+      "group": "rh",
+      "event_type": "hr",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "gestion_employes_v2",
+      "group": "rh",
+      "event_type": "employee",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "suivi_compta",
+      "group": "finance",
+      "event_type": "finance",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "logs_ig",
+      "group": "activity",
+      "event_type": "ig",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "coffre_secondaire",
+      "group": "finance",
+      "event_type": "vault_secondary",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "alerte_coffre",
+      "group": "finance",
+      "event_type": "vault_alert",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "revenu",
+      "group": "finance",
+      "event_type": "income",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "facture",
+      "group": "finance",
+      "event_type": "invoice",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "depenses",
+      "group": "finance",
+      "event_type": "expense",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "paye",
+      "group": "finance",
+      "event_type": "payroll",
+      "channel_id": null,
+      "enabled": true
+    },
+    {
+      "key": "logs_discord",
+      "group": "activity",
+      "event_type": "discord",
+      "channel_id": null,
+      "enabled": true
+    }
+  ]
+}
