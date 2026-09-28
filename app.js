@@ -32,7 +32,8 @@ const DEFAULT_STATE = {
   payroll: [],
   fuelOrders: [],
   closures: [],
-  declarations: []
+  declarations: [],
+  quotas: []
 };
 
 const categories = {
@@ -116,7 +117,7 @@ async function loadState(){
 function mergeState(raw){
   const out=structuredClone(DEFAULT_STATE); Object.assign(out,raw||{}); out.settings={...DEFAULT_STATE.settings,...(raw?.settings||{})};
   out.settings.taxBrackets=Array.isArray(raw?.settings?.taxBrackets)&&raw.settings.taxBrackets.length?raw.settings.taxBrackets:structuredClone(DEFAULT_BRACKETS);
-  for(const k of ['transactions','employees','payroll','fuelOrders','closures','declarations']) if(!Array.isArray(out[k])) out[k]=[];
+  for(const k of ['transactions','employees','payroll','fuelOrders','closures','declarations','quotas']) if(!Array.isArray(out[k])) out[k]=[];
   return out;
 }
 async function saveState(){
@@ -165,10 +166,10 @@ function refreshWeeks(){
 }
 function showPage(page){
   currentPage=page; $$('.page').forEach(p=>p.classList.toggle('active',p.id===page)); $$('.nav-item[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
-  const titles={dashboard:'Tableau de bord',myspace:'Mon espace',declarations:'Déclarations',activity:'Activité',service:'Prises de service',payroll:'Employés & salaires',garage:'Garage',operations:'Finances',fuel:'Essence',fiscal:'Fiscalité',archives:'Archives',integrations:'Discord & Logs',settings:'Paramètres État'}; $('#pageTitle').textContent=titles[page]||page; $('#sidebar').classList.remove('open'); renderAll();
+  const titles={dashboard:'Tableau de bord',myspace:'Mon espace',declarations:'Production',quotas:'Quotas de fabrication',activity:'Activité',service:'Prises de service',payroll:'Employés & salaires',garage:'Garage',operations:'Finances',fuel:'Essence',fiscal:'Fiscalité',archives:'Archives',integrations:'Discord & Logs',settings:'Paramètres État'}; $('#pageTitle').textContent=titles[page]||page; $('#sidebar').classList.remove('open'); renderAll();
 }
 
-function renderAll(){ refreshWeeks(); renderDashboard(); renderOperations(); renderPayroll(); renderFuel(); renderFiscal(); renderArchives(); renderSettings(); }
+function renderAll(){ refreshWeeks(); renderDashboard(); renderOperations(); renderPayroll(); renderFuel(); renderFiscal(); renderArchives(); renderProduction(); renderQuotas(); renderSettings(); }
 function renderDashboard(){
   const c=calcWeek(); $('#heroWeek').textContent=formatWeek(c.id); $('#heroNet').textContent=money(c.net); $('#heroMargin').textContent=`Marge ${c.revenue>0?(c.net/c.revenue*100).toFixed(1):'0.0'} %`; $('#heroSummary').textContent=c.ops.length?`${c.ops.length} opération${c.ops.length>1?'s':''} enregistrée${c.ops.length>1?'s':''} sur la période.`:'Aucune donnée enregistrée sur cette semaine.';
   $('#kpiRevenue').textContent=money(c.revenue); $('#kpiRevenueSub').textContent=`${c.incomes.length} recette${c.incomes.length>1?'s':''}`; $('#kpiExpenses').textContent=money(c.expenseTotal); $('#kpiDeductible').textContent=`${money(c.deductible)} déductibles`; $('#kpiPayroll').textContent=money(c.payroll); $('#kpiPayrollRatio').textContent=`${c.payrollRatio.toFixed(1)} % du CA`; $('#kpiTax').textContent=money(c.tax.amount); $('#kpiTaxRate').textContent=`Taux ${c.tax.rate} %`;
@@ -209,30 +210,103 @@ async function fetchProductsForDeclaration(){
   }
 }
 async function declarationModal(){
-  openModal('<span class="panel-kicker">DÉCLARATION</span><h3>Chargement du catalogue LTD…</h3><div class="empty-state"><p>Synchronisation des produits.</p></div>');
-  const products=await fetchProductsForDeclaration();
-  const options=products.map(p=>'<option value="'+esc(p.id)+'" data-price="'+Number(p.price||0)+'">'+esc(p.name)+' — '+money(p.price)+'</option>').join('');
-  openModal(`<span class="panel-kicker">NOUVELLE DÉCLARATION</span><h3>Déclarer une opération</h3>
+  openModal('<span class="panel-kicker">FABRICATION</span><h3>Chargement du catalogue LTD…</h3><div class="empty-state"><p>Synchronisation des produits.</p></div>');
+  const products=(await fetchProductsForDeclaration()).filter(p=>p.available!==false);
+  const options=products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' · '+esc(p.category||'Divers')+'</option>').join('');
+  openModal(`<span class="panel-kicker">FABRICATION</span><h3>Déclarer une production</h3>
     <form id="declarationForm" class="form-grid">
-      <label>Type<select id="mDecType"><option value="expense_note">Note de frais</option><option value="service">Prestation</option><option value="quota">Quota</option><option value="product">Produits LTD</option><option value="other">Autre</option></select></label>
-      <label>Mode<select id="mDecMode"><option value="pro">Pro</option><option value="perso">Perso</option></select></label>
-      <label class="span-2">Partenaire / client<input id="mDecPartner" placeholder="Optionnel"></label>
-      <label class="span-2">Produit du catalogue<select id="mDecProduct"><option value="">Aucun / non concerné</option>${options}</select></label>
-      <label>Quantité<input id="mDecQty" type="number" min="1" value="1"></label>
-      <label>Montant ($)<input id="mDecAmount" type="number" min="0" step="0.01" value="0"></label>
-      <label class="span-2">Commentaire<input id="mDecNote" placeholder="Précision, motif, numéro de facture…"></label>
-      <div class="modal-actions span-2"><button type="button" id="mCancel" class="btn ghost">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>
+      <label class="span-2">Produit fabriqué<select id="mDecProduct" required><option value="">Choisir un produit…</option>${options}</select></label>
+      <label>Quantité fabriquée<input id="mDecQty" type="number" min="1" step="1" value="1" required></label>
+      <label>Employé<input value="Compte connecté" disabled></label>
+      <label class="span-2">Note<input id="mDecNote" placeholder="Optionnel : craft, lot, précision…"></label>
+      <div class="modal-actions span-2"><button type="button" id="mCancel" class="btn ghost">Annuler</button><button class="btn primary" type="submit">Enregistrer la fabrication</button></div>
     </form>`,root=>{
-      const prod=$('#mDecProduct',root),qty=$('#mDecQty',root),amount=$('#mDecAmount',root);
-      const recalc=()=>{const opt=prod.options[prod.selectedIndex];if(prod.value&&opt){amount.value=(Number(opt.dataset.price||0)*Number(qty.value||1)).toFixed(2)}};
-      prod.onchange=recalc;qty.oninput=recalc;
       $('#mCancel',root).onclick=closeModal;
       $('#declarationForm',root).onsubmit=async ev=>{
         ev.preventDefault();
-        state.declarations.push({id:uid(),created_at:new Date().toISOString(),type:$('#mDecType',root).value,mode:$('#mDecMode',root).value,partner:$('#mDecPartner',root).value.trim(),product_id:prod.value,product_name:prod.value?prod.options[prod.selectedIndex].textContent.split(' — ')[0]:'',quantity:Number(qty.value||0),amount:Number(amount.value||0),note:$('#mDecNote',root).value.trim(),status:'pending'});
-        await saveState();closeModal();toast('Déclaration enregistrée — prête pour la synchro compte/Discord');
+        const prod=$('#mDecProduct',root);
+        const productName=prod.options[prod.selectedIndex]?.textContent.split(' · ')[0]||'Produit';
+        state.declarations.push({
+          id:uid(),
+          created_at:new Date().toISOString(),
+          type:'production',
+          product_id:prod.value,
+          product_name:productName,
+          quantity:Number($('#mDecQty',root).value||0),
+          note:$('#mDecNote',root).value.trim(),
+          status:'validated'
+        });
+        await saveState();closeModal();renderAll();toast('Fabrication enregistrée');
       };
     });
+}
+
+async function quotaModal(){
+  openModal('<span class="panel-kicker">QUOTA</span><h3>Chargement du catalogue LTD…</h3><div class="empty-state"><p>Synchronisation des produits.</p></div>');
+  const products=(await fetchProductsForDeclaration()).filter(p=>p.available!==false);
+  const options=products.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' · '+esc(p.category||'Divers')+'</option>').join('');
+  const start=weekRange(selectedWeek()).start;
+  const end=weekRange(selectedWeek()).end;
+  openModal(`<span class="panel-kicker">DIRECTION</span><h3>Nouveau quota de fabrication</h3>
+    <form id="quotaForm" class="form-grid">
+      <label class="span-2">Produit<select id="mQuotaProduct" required><option value="">Choisir un produit…</option>${options}</select></label>
+      <label>Quantité cible<input id="mQuotaQty" type="number" min="1" step="1" required value="100"></label>
+      <label>Attribuer à<select id="mQuotaTarget"><option value="all">Toute l'équipe</option><option value="vendeurs">Vendeurs</option><option value="pompistes">Pompistes</option><option value="livreurs">Livreurs</option></select></label>
+      <label>Début<input id="mQuotaStart" type="date" value="${isoDate(start)}" required></label>
+      <label>Fin<input id="mQuotaEnd" type="date" value="${isoDate(end)}" required></label>
+      <label class="span-2">Nom / consigne<input id="mQuotaName" placeholder="Ex : Production semaine"></label>
+      <div class="modal-actions span-2"><button type="button" id="mCancel" class="btn ghost">Annuler</button><button class="btn primary" type="submit">Créer le quota</button></div>
+    </form>`,root=>{
+      $('#mCancel',root).onclick=closeModal;
+      $('#quotaForm',root).onsubmit=async ev=>{
+        ev.preventDefault();
+        const prod=$('#mQuotaProduct',root);
+        const productName=prod.options[prod.selectedIndex]?.textContent.split(' · ')[0]||'Produit';
+        state.quotas.push({
+          id:uid(),
+          name:$('#mQuotaName',root).value.trim()||('Quota '+productName),
+          product_id:prod.value,
+          product_name:productName,
+          target_quantity:Number($('#mQuotaQty',root).value||0),
+          target_group:$('#mQuotaTarget',root).value,
+          period_start:$('#mQuotaStart',root).value,
+          period_end:$('#mQuotaEnd',root).value,
+          active:true,
+          created_at:new Date().toISOString()
+        });
+        await saveState();closeModal();renderAll();toast('Quota créé');
+      };
+    });
+}
+
+function renderProduction(){
+  const box=$('#productionList'); if(!box) return;
+  const wid=selectedWeek();
+  const rows=state.declarations.filter(d=>d.type==='production'&&inWeek(d.created_at,wid)).sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  const total=rows.reduce((n,d)=>n+Number(d.quantity||0),0);
+  const active=state.quotas.filter(q=>q.active!==false && new Date(q.period_end+'T23:59:59')>=new Date()).length;
+  const target=state.quotas.filter(q=>q.active!==false).reduce((n,q)=>n+Number(q.target_quantity||0),0);
+  if($('#prodWeekTotal')) $('#prodWeekTotal').textContent=number(total);
+  if($('#prodActiveQuotas')) $('#prodActiveQuotas').textContent=number(active);
+  if($('#prodProgress')) $('#prodProgress').textContent=target?Math.min(999,total/target*100).toFixed(0)+' %':'—';
+  box.className=rows.length?'production-feed':'empty-state';
+  box.innerHTML=rows.length?rows.map(d=>`<div class="production-row"><div><strong>${esc(d.product_name)}</strong><span>${formatDate(d.created_at)}${d.note?' · '+esc(d.note):''}</span></div><b>${number(d.quantity)} unité(s)</b></div>`).join(''):'<strong>Aucune fabrication déclarée</strong><p>Chaque déclaration contient uniquement le produit fabriqué et la quantité.</p>';
+}
+
+function renderQuotas(){
+  const box=$('#quotaList'); if(!box) return;
+  const rows=[...state.quotas].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  box.className=rows.length?'quota-feed':'empty-state';
+  box.innerHTML=rows.length?rows.map(q=>{
+    const produced=state.declarations.filter(d=>d.type==='production'&&d.product_id===q.product_id&&new Date(d.created_at)>=new Date(q.period_start+'T00:00:00')&&new Date(d.created_at)<=new Date(q.period_end+'T23:59:59')).reduce((n,d)=>n+Number(d.quantity||0),0);
+    const pct=q.target_quantity?Math.min(100,produced/q.target_quantity*100):0;
+    return `<div class="quota-row">
+      <div class="quota-main"><strong>${esc(q.product_name)}</strong><span>${esc(q.name)} · ${esc(q.target_group||'all')} · ${q.period_start} → ${q.period_end}</span><div class="quota-bar"><i style="width:${pct}%"></i></div></div>
+      <div class="quota-numbers"><b>${number(produced)} / ${number(q.target_quantity)}</b><small>${pct.toFixed(0)} %</small></div>
+      <button class="text-btn" data-delete-quota="${q.id}">Suppr.</button>
+    </div>`;
+  }).join(''):'<strong>Aucun quota configuré</strong><p>Crée un quota pour commencer le suivi de production.</p>';
+  $$('[data-delete-quota]').forEach(b=>b.onclick=async()=>{if(confirm('Supprimer ce quota ?')){state.quotas=state.quotas.filter(q=>q.id!==b.dataset.deleteQuota);await saveState();renderAll();toast('Quota supprimé')}});
 }
 
 function operationModal(){
@@ -273,6 +347,7 @@ function bindEvents(){
   $('#themeToggle').onclick=toggleTheme;
   $$('.nav-item[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page)); $$('[data-goto]').forEach(b=>b.onclick=()=>showPage(b.dataset.goto)); $('#weekSelect').onchange=renderAll; $('#quickAddBtn').onclick=operationModal;$('#addOperationBtn').onclick=operationModal;$('#opSearch').oninput=renderOperations;$('#opTypeFilter').onchange=renderOperations;$('#addEmployeeBtn').onclick=()=>employeeModal();
   if($('#newDeclarationBtn')) $('#newDeclarationBtn').onclick=declarationModal;
+  if($('#newQuotaBtn')) $('#newQuotaBtn').onclick=quotaModal;
   $('#fuelLiters').oninput=fuelCalc;$('#fuelRate').onchange=fuelCalc;$('#fuelForm').onsubmit=async e=>{e.preventDefault();const x=fuelCalc();if(!x.liters)return;const id=uid(),date=new Date().toISOString(),client=$('#fuelClient').value.trim(),rate=$('#fuelRate').value,note=$('#fuelNote').value.trim();state.fuelOrders.push({id,date,client,liters:x.liters,cans:x.cans,price:x.price,total:x.total,rate,note});state.transactions.push({id:uid(),fuelOrderId:id,date,type:'income',label:`Essence — ${client}`,category:'fuel',amount:x.total,deductible:false,note:`${x.liters} L · ${x.cans} bidons${note?` · ${note}`:''}`});await saveState();e.target.reset();$('#fuelRate').value='normal';renderAll();toast('Commande essence enregistrée')};
   $('#closeWeekBtn').onclick=closeWeek;$('#backupBtn').onclick=()=>downloadJson(state,`ltd-sandy-backup-${isoDate(new Date())}.json`);$('#exportJsonBtn').onclick=()=>downloadJson(state);$('#exportCsvBtn').onclick=exportCsv;$('#importJsonInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());state=mergeState(raw);await saveState();renderAll();toast('Sauvegarde importée')}catch{toast('Fichier JSON invalide','error')}e.target.value=''};
   $('#generalSettingsForm').onsubmit=async e=>{e.preventDefault();Object.assign(state.settings,{initialBalance:Number($('#initialBalance').value),fuelCanLiters:Number($('#fuelCanLitersSetting').value),fuelNormalPrice:Number($('#fuelNormalPriceSetting').value),fuelPartnerPrice:Number($('#fuelPartnerPriceSetting').value),payrollWarn:Number($('#payrollWarnSetting').value),payrollMax:Number($('#payrollMaxSetting').value)});await saveState();renderAll();toast('Paramètres enregistrés')};
