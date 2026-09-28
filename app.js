@@ -3,6 +3,8 @@ const STORAGE_KEY = 'ltd_sandy_compta_v1';
 const SESSION_KEY = 'ltd_sandy_compta_session';
 const THEME_KEY = 'ltd_sandy_theme';
 const CLOUD_ROW_ID = 'main';
+const SUPABASE_PROJECT_URL = 'https://mlelowyvwvlrunhnivzf.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fCEEBzCjmZKfyz8JIgTLqw_AUViyHeZ';
 
 const DEFAULT_BRACKETS = [
   { limit: 50000, rate: 10 },
@@ -29,7 +31,8 @@ const DEFAULT_STATE = {
   employees: [],
   payroll: [],
   fuelOrders: [],
-  closures: []
+  closures: [],
+  declarations: []
 };
 
 const categories = {
@@ -113,7 +116,7 @@ async function loadState(){
 function mergeState(raw){
   const out=structuredClone(DEFAULT_STATE); Object.assign(out,raw||{}); out.settings={...DEFAULT_STATE.settings,...(raw?.settings||{})};
   out.settings.taxBrackets=Array.isArray(raw?.settings?.taxBrackets)&&raw.settings.taxBrackets.length?raw.settings.taxBrackets:structuredClone(DEFAULT_BRACKETS);
-  for(const k of ['transactions','employees','payroll','fuelOrders','closures']) if(!Array.isArray(out[k])) out[k]=[];
+  for(const k of ['transactions','employees','payroll','fuelOrders','closures','declarations']) if(!Array.isArray(out[k])) out[k]=[];
   return out;
 }
 async function saveState(){
@@ -162,7 +165,7 @@ function refreshWeeks(){
 }
 function showPage(page){
   currentPage=page; $$('.page').forEach(p=>p.classList.toggle('active',p.id===page)); $$('.nav-item[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
-  const titles={dashboard:'Tableau de bord',operations:'Opérations',payroll:'Salaires',fuel:'Essence',fiscal:'Fiscalité',archives:'Archives',settings:'Paramètres État'}; $('#pageTitle').textContent=titles[page]||page; $('#sidebar').classList.remove('open'); renderAll();
+  const titles={dashboard:'Tableau de bord',myspace:'Mon espace',declarations:'Déclarations',activity:'Activité',service:'Prises de service',payroll:'Employés & salaires',garage:'Garage',operations:'Finances',fuel:'Essence',fiscal:'Fiscalité',archives:'Archives',integrations:'Discord & Logs',settings:'Paramètres État'}; $('#pageTitle').textContent=titles[page]||page; $('#sidebar').classList.remove('open'); renderAll();
 }
 
 function renderAll(){ refreshWeeks(); renderDashboard(); renderOperations(); renderPayroll(); renderFuel(); renderFiscal(); renderArchives(); renderSettings(); }
@@ -193,6 +196,45 @@ function renderOperations(){
   $('#operationsBody').innerHTML=rows.length?rows.map(t=>`<tr><td>${formatDate(t.date)}</td><td><strong>${esc(t.label)}</strong></td><td><span class="tag">${esc(categoryLabels[t.category]||t.category||'—')}</span></td><td>${t.type==='expense'?`<span class="tag ${t.deductible?'dedu':'non'}">${t.deductible?'Oui':'Non'}</span>`:'—'}</td><td>${esc(t.note||'—')}</td><td class="right amount ${t.type}">${t.type==='expense'||t.type==='tax'?'-':'+'}${money(t.amount)}</td><td><button class="text-btn" data-delete-op="${t.id}">Suppr.</button></td></tr>`).join(''):`<tr class="empty-row"><td colspan="7">Aucune opération.</td></tr>`;
   $$('[data-delete-op]').forEach(b=>b.onclick=async()=>{if(confirm('Supprimer cette opération ?')){state.transactions=state.transactions.filter(t=>t.id!==b.dataset.deleteOp);await saveState();renderAll();toast('Opération supprimée')}});
 }
+
+async function fetchProductsForDeclaration(){
+  try{
+    const res=await fetch(SUPABASE_PROJECT_URL+'/rest/v1/products?select=id,name,category,price,available&active=eq.true&order=category.asc,name.asc',{
+      headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY}
+    });
+    if(!res.ok) throw new Error('catalog');
+    return await res.json();
+  }catch{
+    return [];
+  }
+}
+async function declarationModal(){
+  openModal('<span class="panel-kicker">DÉCLARATION</span><h3>Chargement du catalogue LTD…</h3><div class="empty-state"><p>Synchronisation des produits.</p></div>');
+  const products=await fetchProductsForDeclaration();
+  const options=products.map(p=>'<option value="'+esc(p.id)+'" data-price="'+Number(p.price||0)+'">'+esc(p.name)+' — '+money(p.price)+'</option>').join('');
+  openModal(`<span class="panel-kicker">NOUVELLE DÉCLARATION</span><h3>Déclarer une opération</h3>
+    <form id="declarationForm" class="form-grid">
+      <label>Type<select id="mDecType"><option value="expense_note">Note de frais</option><option value="service">Prestation</option><option value="quota">Quota</option><option value="product">Produits LTD</option><option value="other">Autre</option></select></label>
+      <label>Mode<select id="mDecMode"><option value="pro">Pro</option><option value="perso">Perso</option></select></label>
+      <label class="span-2">Partenaire / client<input id="mDecPartner" placeholder="Optionnel"></label>
+      <label class="span-2">Produit du catalogue<select id="mDecProduct"><option value="">Aucun / non concerné</option>${options}</select></label>
+      <label>Quantité<input id="mDecQty" type="number" min="1" value="1"></label>
+      <label>Montant ($)<input id="mDecAmount" type="number" min="0" step="0.01" value="0"></label>
+      <label class="span-2">Commentaire<input id="mDecNote" placeholder="Précision, motif, numéro de facture…"></label>
+      <div class="modal-actions span-2"><button type="button" id="mCancel" class="btn ghost">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div>
+    </form>`,root=>{
+      const prod=$('#mDecProduct',root),qty=$('#mDecQty',root),amount=$('#mDecAmount',root);
+      const recalc=()=>{const opt=prod.options[prod.selectedIndex];if(prod.value&&opt){amount.value=(Number(opt.dataset.price||0)*Number(qty.value||1)).toFixed(2)}};
+      prod.onchange=recalc;qty.oninput=recalc;
+      $('#mCancel',root).onclick=closeModal;
+      $('#declarationForm',root).onsubmit=async ev=>{
+        ev.preventDefault();
+        state.declarations.push({id:uid(),created_at:new Date().toISOString(),type:$('#mDecType',root).value,mode:$('#mDecMode',root).value,partner:$('#mDecPartner',root).value.trim(),product_id:prod.value,product_name:prod.value?prod.options[prod.selectedIndex].textContent.split(' — ')[0]:'',quantity:Number(qty.value||0),amount:Number(amount.value||0),note:$('#mDecNote',root).value.trim(),status:'pending'});
+        await saveState();closeModal();toast('Déclaration enregistrée — prête pour la synchro compte/Discord');
+      };
+    });
+}
+
 function operationModal(){
   openModal(`<span class="panel-kicker">NOUVELLE ÉCRITURE</span><h3>Ajouter une opération</h3><form id="operationForm" class="form-grid"><label>Date<input id="mOpDate" type="datetime-local" required value="${new Date().toISOString().slice(0,16)}"></label><label>Type<select id="mOpType"><option value="income">Recette</option><option value="expense">Dépense</option><option value="subsidy">Subvention</option><option value="tax">Impôt payé</option></select></label><label class="span-2">Libellé<input id="mOpLabel" required placeholder="Ex : Vente boutique"></label><label>Catégorie<select id="mOpCategory"></select></label><label>Montant ($)<input id="mOpAmount" type="number" min="0" step="0.01" required></label><label id="mDedWrap">Déductible<select id="mOpDed"><option value="true">Oui</option><option value="false">Non</option></select></label><label class="span-2">Note<input id="mOpNote" placeholder="Optionnel"></label><div class="modal-actions span-2"><button type="button" class="btn ghost" id="mCancel">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div></form>`, root=>{
     const type=$('#mOpType',root),cat=$('#mOpCategory',root),ded=$('#mDedWrap',root); function fill(){const v=type.value; if(v==='income')cat.innerHTML=categories.income.map(([a,b])=>`<option value="${a}">${b}</option>`).join(''); else if(v==='expense')cat.innerHTML=categories.expense.map(([a,b])=>`<option value="${a}">${b}</option>`).join(''); else cat.innerHTML=`<option value="${v}">${v==='subsidy'?'Subvention':'Impôt payé'}</option>`; ded.classList.toggle('hidden',v!=='expense'); setDed();} function setDed(){if(type.value==='expense')$('#mOpDed',root).value=defaultDeductible.has(cat.value)?'true':'false';} type.onchange=fill;cat.onchange=setDed;fill(); $('#mCancel',root).onclick=closeModal; $('#operationForm',root).onsubmit=async e=>{e.preventDefault(); const typ=type.value;state.transactions.push({id:uid(),date:new Date($('#mOpDate',root).value).toISOString(),type:typ,label:$('#mOpLabel',root).value.trim(),category:cat.value,amount:Number($('#mOpAmount',root).value),deductible:typ==='expense'?$('#mOpDed',root).value==='true':false,note:$('#mOpNote',root).value.trim()});await saveState();closeModal();renderAll();toast('Opération enregistrée');};
@@ -229,7 +271,8 @@ function bindEvents(){
   $('#toggleCode').onclick=()=>{const i=$('#accessCode');i.type=i.type==='password'?'text':'password';$('#toggleCode').textContent=i.type==='password'?'Afficher':'Masquer'};
   $('#logoutBtn').onclick=()=>{sessionStorage.removeItem(SESSION_KEY);location.reload()}; $('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
   $('#themeToggle').onclick=toggleTheme;
-  $$('.nav-item[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page)); $$('[data-goto]').forEach(b=>b.onclick=()=>showPage(b.dataset.goto)); $('#weekSelect').onchange=renderAll; $('#quickAddBtn').onclick=operationModal;$('#addOperationBtn').onclick=operationModal;$('#opSearch').oninput=renderOperations;$('#opTypeFilter').onchange=renderOperations;$('#addEmployeeBtn').onclick=()=>employeeModal();
+  $('.nav-item[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page)); $('[data-goto]').forEach(b=>b.onclick=()=>showPage(b.dataset.goto)); $('#weekSelect').onchange=renderAll; $('#quickAddBtn').onclick=operationModal;$('#addOperationBtn').onclick=operationModal;$('#opSearch').oninput=renderOperations;$('#opTypeFilter').onchange=renderOperations;$('#addEmployeeBtn').onclick=()=>employeeModal();
+  if($('#newDeclarationBtn')) $('#newDeclarationBtn').onclick=declarationModal;
   $('#fuelLiters').oninput=fuelCalc;$('#fuelRate').onchange=fuelCalc;$('#fuelForm').onsubmit=async e=>{e.preventDefault();const x=fuelCalc();if(!x.liters)return;const id=uid(),date=new Date().toISOString(),client=$('#fuelClient').value.trim(),rate=$('#fuelRate').value,note=$('#fuelNote').value.trim();state.fuelOrders.push({id,date,client,liters:x.liters,cans:x.cans,price:x.price,total:x.total,rate,note});state.transactions.push({id:uid(),fuelOrderId:id,date,type:'income',label:`Essence — ${client}`,category:'fuel',amount:x.total,deductible:false,note:`${x.liters} L · ${x.cans} bidons${note?` · ${note}`:''}`});await saveState();e.target.reset();$('#fuelRate').value='normal';renderAll();toast('Commande essence enregistrée')};
   $('#closeWeekBtn').onclick=closeWeek;$('#backupBtn').onclick=()=>downloadJson(state,`ltd-sandy-backup-${isoDate(new Date())}.json`);$('#exportJsonBtn').onclick=()=>downloadJson(state);$('#exportCsvBtn').onclick=exportCsv;$('#importJsonInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());state=mergeState(raw);await saveState();renderAll();toast('Sauvegarde importée')}catch{toast('Fichier JSON invalide','error')}e.target.value=''};
   $('#generalSettingsForm').onsubmit=async e=>{e.preventDefault();Object.assign(state.settings,{initialBalance:Number($('#initialBalance').value),fuelCanLiters:Number($('#fuelCanLitersSetting').value),fuelNormalPrice:Number($('#fuelNormalPriceSetting').value),fuelPartnerPrice:Number($('#fuelPartnerPriceSetting').value),payrollWarn:Number($('#payrollWarnSetting').value),payrollMax:Number($('#payrollMaxSetting').value)});await saveState();renderAll();toast('Paramètres enregistrés')};
