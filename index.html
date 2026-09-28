@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#f4f5f7" />
+  <meta name="theme-color" content="#08131d" />
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem("ltd_sandy_theme")||"dark"}catch(e){document.documentElement.dataset.theme="dark"}</script>
   <title>Comptabilité — LTD Sandy Shores</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -31,15 +32,27 @@
     <aside class="sidebar" id="sidebar">
       <div class="side-brand">
         <div class="side-logo">LTD</div>
-        <div><strong>Sandy Shores</strong><span>Comptabilité</span></div>
+        <div class="side-brand-copy"><strong>LTD Sandy Shores</strong><span>Accounting & Management</span></div>
+      </div>
+      <div class="company-switcher">
+        <div class="company-avatar">S</div>
+        <div><strong>Sandy Shores</strong><span>Direction LTD</span></div>
+        <b>⇄</b>
       </div>
       <nav id="mainNav">
-        <button class="nav-item active" data-page="dashboard"><span>⌂</span> Tableau de bord</button>
-        <button class="nav-item" data-page="operations"><span>↕</span> Opérations</button>
-        <button class="nav-item" data-page="payroll"><span>◎</span> Salaires</button>
+        <div class="nav-section-title">Vue générale</div>
+        <button class="nav-item active" data-page="dashboard"><span>▥</span> Tableau de bord</button>
+        <button class="nav-item" data-page="operations"><span>▤</span> Opérations</button>
+
+        <div class="nav-section-title">Gestion RH</div>
+        <button class="nav-item" data-page="payroll"><span>♟</span> Employés & salaires</button>
+
+        <div class="nav-section-title">Gestion financière</div>
         <button class="nav-item" data-page="fuel"><span>⛽</span> Essence</button>
-        <button class="nav-item" data-page="fiscal"><span>§</span> Fiscalité</button>
+        <button class="nav-item" data-page="fiscal"><span>▰</span> Fiscalité</button>
         <button class="nav-item" data-page="archives"><span>▣</span> Archives</button>
+
+        <div class="nav-section-title">Administration</div>
         <button class="nav-item" data-page="settings"><span>⚙</span> Paramètres État</button>
       </nav>
       <div class="side-bottom">
@@ -56,6 +69,9 @@
           <h2 id="pageTitle">Tableau de bord</h2>
         </div>
         <div class="top-actions">
+          <button id="themeToggle" class="theme-toggle" type="button" title="Changer de thème" aria-label="Changer de thème">
+            <span id="themeIcon">☾</span><span id="themeText">Sombre</span>
+          </button>
           <select id="weekSelect" class="compact-select" title="Semaine"></select>
           <button id="backupBtn" class="btn ghost">Exporter</button>
           <button id="quickAddBtn" class="btn primary">+ Opération</button>
