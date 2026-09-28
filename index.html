@@ -43,7 +43,8 @@
         <div class="nav-section-title">Vue générale</div>
         <button class="nav-item active" data-page="dashboard"><span>▥</span> Tableau de bord</button>
         <button class="nav-item" data-page="myspace"><span>⌂</span> Mon espace</button>
-        <button class="nav-item" data-page="declarations"><span>▤</span> Déclarations</button>
+        <button class="nav-item" data-page="declarations"><span>📦</span> Production</button>
+        <button class="nav-item" data-page="quotas"><span>🎯</span> Quotas</button>
 
         <div class="nav-section-title">Gestion RH</div>
         <button class="nav-item" data-page="activity"><span>▦</span> Activité</button>
@@ -133,9 +134,14 @@
       </section>
 
       <section id="declarations" class="page">
-        <div class="section-intro"><div><span class="panel-kicker">DÉCLARATIONS</span><h3>Déclarations employés</h3><p>Les ventes issues des logs Discord/IG seront classées automatiquement. Cette page reste utile pour les notes de frais, prestations, quotas ou déclarations manuelles exceptionnelles.</p></div><button class="btn primary" id="newDeclarationBtn">+ Nouvelle déclaration</button></div>
-        <article class="panel"><div class="filter-grid"><label>Type<select><option>Tous</option><option>Prestation</option><option>Note de frais</option><option>Quota</option><option>Autre</option></select></label><label>Employé<select><option>Tous</option></select></label><label>Partenaire<select><option>Tous</option></select></label><label>Statut<select><option>Tous</option><option>En attente</option><option>Validée</option></select></label></div></article>
-        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">SUIVI</span><h3>Déclarations</h3></div><span class="status info">Connecté aux produits LTD</span></div><div class="empty-state"><strong>Prêt pour la synchronisation</strong><p>Les déclarations pourront contenir plusieurs produits du catalogue LTD, des quantités, un partenaire, un montant et une note.</p></div></article>
+        <div class="section-intro"><div><span class="panel-kicker">FABRICATION</span><h3>Production des employés</h3><p>Ici, on déclare uniquement ce qui a été fabriqué au LTD. Les ventes et le chiffre d’affaires viennent automatiquement des factures Discord/IG.</p></div><button class="btn primary" id="newDeclarationBtn">+ Déclarer une fabrication</button></div>
+        <div class="kpi-grid three"><article class="kpi-card"><span>Production semaine</span><strong id="prodWeekTotal">0</strong><small>unités déclarées</small></article><article class="kpi-card"><span>Quotas actifs</span><strong id="prodActiveQuotas">0</strong><small>objectifs en cours</small></article><article class="kpi-card"><span>Progression</span><strong id="prodProgress">—</strong><small>sur les quotas suivis</small></article></div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">PRODUITS FABRIQUÉS</span><h3>Suivi des déclarations</h3></div><span class="status info">Catalogue LTD</span></div><div id="productionList" class="empty-state"><strong>Aucune fabrication déclarée</strong><p>Chaque déclaration contient un produit, une quantité, un employé et éventuellement une note.</p></div></article>
+      </section>
+
+      <section id="quotas" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">OBJECTIFS DIRECTION</span><h3>Quotas de fabrication</h3><p>La Direction choisit les produits à fabriquer, la quantité attendue, la période et éventuellement un poste ou un employé précis.</p></div><button class="btn primary" id="newQuotaBtn">+ Nouveau quota</button></div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">QUOTAS ACTIFS</span><h3>Suivi de progression</h3></div><span class="status ok">Direction</span></div><div id="quotaList" class="empty-state"><strong>Aucun quota configuré</strong><p>Crée un quota pour commencer le suivi de production.</p></div></article>
       </section>
 
       <section id="activity" class="page">
