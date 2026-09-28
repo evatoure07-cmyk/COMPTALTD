@@ -42,17 +42,23 @@
       <nav id="mainNav">
         <div class="nav-section-title">Vue générale</div>
         <button class="nav-item active" data-page="dashboard"><span>▥</span> Tableau de bord</button>
-        <button class="nav-item" data-page="operations"><span>▤</span> Opérations</button>
+        <button class="nav-item" data-page="myspace"><span>⌂</span> Mon espace</button>
+        <button class="nav-item" data-page="declarations"><span>▤</span> Déclarations</button>
 
         <div class="nav-section-title">Gestion RH</div>
+        <button class="nav-item" data-page="activity"><span>▦</span> Activité</button>
+        <button class="nav-item" data-page="service"><span>◉</span> Prises de service</button>
         <button class="nav-item" data-page="payroll"><span>♟</span> Employés & salaires</button>
+        <button class="nav-item" data-page="garage"><span>🚗</span> Garage</button>
 
         <div class="nav-section-title">Gestion financière</div>
+        <button class="nav-item" data-page="operations"><span>▤</span> Finances</button>
         <button class="nav-item" data-page="fuel"><span>⛽</span> Essence</button>
         <button class="nav-item" data-page="fiscal"><span>▰</span> Fiscalité</button>
         <button class="nav-item" data-page="archives"><span>▣</span> Archives</button>
 
         <div class="nav-section-title">Administration</div>
+        <button class="nav-item" data-page="integrations"><span>∞</span> Discord & Logs</button>
         <button class="nav-item" data-page="settings"><span>⚙</span> Paramètres État</button>
       </nav>
       <div class="side-bottom">
@@ -114,6 +120,61 @@
           <div class="panel-head"><div><span class="panel-kicker">JOURNAL</span><h3>Dernières opérations</h3></div><button class="text-btn" data-goto="operations">Voir tout →</button></div>
           <div class="table-wrap"><table><thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Type</th><th class="right">Montant</th></tr></thead><tbody id="recentOpsBody"></tbody></table></div>
         </article>
+      </section>
+
+
+      <section id="myspace" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">ESPACE PERSONNEL</span><h3>Mon espace</h3><p>Vue personnelle de l’employé : annonces, service en cours, déclarations et informations utiles.</p></div></div>
+        <div class="dashboard-grid">
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">ANNONCES</span><h3>Informations LTD</h3></div><span class="status info">Direction</span></div><div class="announcement-card"><strong>Connexion Discord prévue</strong><p>Les annonces internes et alertes pourront être reprises automatiquement depuis Discord.</p></div></article>
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">SERVICE</span><h3>Statut personnel</h3></div><span class="status ok">PRÊT</span></div><div class="personal-stat"><span>Heures de service</span><strong>—</strong><small>Alimenté automatiquement par le rôle Discord “service”.</small></div></article>
+        </div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">RACCOURCIS</span><h3>Actions rapides</h3></div></div><div class="quick-grid"><button class="quick-card" data-goto="declarations">🧾<strong>Nouvelle déclaration</strong><span>Note de frais, prestation, produit, autre</span></button><button class="quick-card" data-goto="service">⏱️<strong>Mes services</strong><span>Historique et temps cumulé</span></button><button class="quick-card" data-goto="payroll">👥<strong>Ma fiche</strong><span>Rôle, salaire, CA et informations RH</span></button></div></article>
+      </section>
+
+      <section id="declarations" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">DÉCLARATIONS</span><h3>Déclarations employés</h3><p>Les ventes issues des logs Discord/IG seront classées automatiquement. Cette page reste utile pour les notes de frais, prestations, quotas ou déclarations manuelles exceptionnelles.</p></div><button class="btn primary" id="newDeclarationBtn">+ Nouvelle déclaration</button></div>
+        <article class="panel"><div class="filter-grid"><label>Type<select><option>Tous</option><option>Prestation</option><option>Note de frais</option><option>Quota</option><option>Autre</option></select></label><label>Employé<select><option>Tous</option></select></label><label>Partenaire<select><option>Tous</option></select></label><label>Statut<select><option>Tous</option><option>En attente</option><option>Validée</option></select></label></div></article>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">SUIVI</span><h3>Déclarations</h3></div><span class="status info">Connecté aux produits LTD</span></div><div class="empty-state"><strong>Prêt pour la synchronisation</strong><p>Les déclarations pourront contenir plusieurs produits du catalogue LTD, des quantités, un partenaire, un montant et une note.</p></div></article>
+      </section>
+
+      <section id="activity" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">JOURNAL GLOBAL</span><h3>Activité</h3><p>Fil central destiné à regrouper les logs IG, Discord, coffre, factures, véhicules, service et RH.</p></div></div>
+        <div class="kpi-grid"><article class="kpi-card"><span>Service</span><strong>0</strong><small>événements</small></article><article class="kpi-card"><span>Comptabilité</span><strong>0</strong><small>événements</small></article><article class="kpi-card"><span>Véhicules</span><strong>0</strong><small>événements</small></article><article class="kpi-card"><span>RH</span><strong>0</strong><small>événements</small></article></div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">FIL D’ACTIVITÉS</span><h3>Événements récents</h3></div><span class="status ok">Moteur prêt</span></div><div class="empty-state"><strong>Aucun événement Discord ingéré pour le moment</strong><p>Le moteur classera automatiquement chaque message selon sa source et son contenu.</p></div></article>
+      </section>
+
+      <section id="service" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">PRÉSENCE</span><h3>Prises de service</h3><p>Le rôle Discord “service” servira de source pour ouvrir et fermer les sessions automatiquement.</p></div><span class="status info">Discord role sync</span></div>
+        <div class="kpi-grid three"><article class="kpi-card"><span>Actuellement en service</span><strong>0</strong><small>personne</small></article><article class="kpi-card"><span>Heures cette semaine</span><strong>0 h</strong><small>équipe complète</small></article><article class="kpi-card"><span>Sessions</span><strong>0</strong><small>cette semaine</small></article></div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">HISTORIQUE</span><h3>Sessions de service</h3></div></div><div class="empty-state"><strong>En attente du branchement Discord</strong><p>Ajout du rôle = début de service. Retrait du rôle = fin de service. La durée sera calculée automatiquement.</p></div></article>
+      </section>
+
+      <section id="garage" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">FLOTTE LTD</span><h3>Garage</h3><p>Sorties, retours, remplissages et actions véhicules pourront venir directement des logs véhicules.</p></div></div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">VÉHICULES</span><h3>État de la flotte</h3></div><span class="status info">Source : logs véhicules</span></div><div class="empty-state"><strong>Aucun véhicule synchronisé</strong><p>Le système est prêt à recevoir nom, plaque, ID, statut, conducteur et heure de dernière action.</p></div></article>
+      </section>
+
+      <section id="integrations" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">AUTOMATISATION</span><h3>Discord & Logs</h3><p>Centre de mapping des salons Discord vers les modules du site. Les IDs de salons et le rôle “service” seront renseignés ici au moment du branchement final.</p></div><span class="status ok">Architecture prête</span></div>
+        <div class="integration-summary"><article><span>Sources prévues</span><strong>25</strong><small>logs et suivis</small></article><article><span>Catégories</span><strong>6</strong><small>finance · RH · service · véhicules · déclarations · activité</small></article><article><span>Mode</span><strong>AUTO</strong><small>classification par source + contenu</small></article></div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">MAPPINGS</span><h3>Sources Discord prévues</h3></div></div>
+          <div class="source-grid" id="discordSourceGrid">
+            <div class="source-card"><b>⏱ Logs service</b><span>→ Prises de service / heures</span></div>
+            <div class="source-card"><b>💰 Coffre & entrées</b><span>→ Revenus / mouvements</span></div>
+            <div class="source-card"><b>💸 Sorties d’argent</b><span>→ Dépenses</span></div>
+            <div class="source-card"><b>🧾 Factures</b><span>→ Factures / revenus</span></div>
+            <div class="source-card"><b>🚗 Véhicules</b><span>→ Garage / activité</span></div>
+            <div class="source-card"><b>⛽ Paiement station</b><span>→ Essence / dépenses</span></div>
+            <div class="source-card"><b>📄 Notes de frais</b><span>→ Déclarations / dépenses</span></div>
+            <div class="source-card"><b>🎯 Quotas</b><span>→ RH / rémunération</span></div>
+            <div class="source-card"><b>💵 Paye</b><span>→ Salaires</span></div>
+            <div class="source-card"><b>👑 Promotion / rétrogradation</b><span>→ RH / rôle</span></div>
+            <div class="source-card"><b>🚪 Licenciement / archive</b><span>→ RH / statut</span></div>
+            <div class="source-card"><b>🎮 Logs IG</b><span>→ Activité globale</span></div>
+          </div>
+        </article>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">CLASSIFICATION</span><h3>Règles automatiques</h3></div></div><div class="rule-list"><div><strong>Facture payée</strong><span>Revenu + facture + CA employé si identifiable</span></div><div><strong>Entrée coffre</strong><span>Revenu ou mouvement de coffre selon le salon</span></div><div><strong>Sortie coffre</strong><span>Dépense, catégorie déduite du texte quand possible</span></div><div><strong>Rôle “service” ajouté / retiré</strong><span>Début / fin de session et calcul des heures</span></div><div><strong>Promotion / rétrogradation / licenciement</strong><span>Mise à jour automatique de la fiche RH</span></div></div></article>
       </section>
 
       <section id="operations" class="page">
