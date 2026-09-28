@@ -24,6 +24,16 @@
         <button class="btn primary full" type="submit">Se connecter</button>
         <p id="loginError" class="form-error hidden">Code incorrect.</p>
       </form>
+      <div class="login-separator"><span>ou</span></div>
+      <form id="staffLoginForm" class="login-form staff-login-form">
+        <div class="staff-login-title"><strong>Compte employé</strong><span>Connexion avec l’identifiant créé par la Direction</span></div>
+        <label for="staffUsername">Identifiant</label>
+        <input id="staffUsername" class="login-input" autocomplete="username" placeholder="prenom.nom" />
+        <label for="staffPassword">Mot de passe</label>
+        <input id="staffPassword" class="login-input" type="password" autocomplete="current-password" placeholder="••••••••" />
+        <button class="btn ghost full" type="submit">Se connecter comme employé</button>
+        <p id="staffLoginError" class="form-error hidden">Identifiant ou mot de passe incorrect.</p>
+      </form>
       <div class="login-footer">LTD Sandy Shores · San Andreas</div>
     </div>
   </div>
@@ -185,18 +195,38 @@
 
       <section id="operations" class="page">
         <article class="panel">
-          <div class="panel-head wrap"><div><span class="panel-kicker">LIVRE DE COMPTE</span><h3>Recettes & dépenses</h3></div><div class="filters"><input id="opSearch" class="compact-input" placeholder="Rechercher…" /><select id="opTypeFilter" class="compact-select"><option value="all">Tous</option><option value="income">Recettes</option><option value="expense">Dépenses</option><option value="subsidy">Subventions</option><option value="tax">Impôts payés</option></select><button id="addOperationBtn" class="btn primary">+ Ajouter</button></div></div>
+          <div class="panel-head wrap"><div><span class="panel-kicker">LIVRE DE COMPTE</span><h3>Recettes & dépenses</h3></div><div class="filters"><input id="opSearch" class="compact-input" placeholder="Rechercher…" /><select id="opTypeFilter" class="compact-select"><option value="all">Tous</option><option value="income">Recettes</option><option value="expense">Dépenses</option><option value="subsidy">Subventions</option><option value="tax">Impôts payés</option></select><button id="cardExpenseBtn" class="btn ghost">Carte GPLTD</button><button id="addOperationBtn" class="btn primary">+ Ajouter</button></div></div>
           <div class="table-wrap"><table><thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Déductible</th><th>Note</th><th class="right">Montant</th><th></th></tr></thead><tbody id="operationsBody"></tbody></table></div>
         </article>
       </section>
 
       <section id="payroll" class="page">
-        <div class="section-intro"><div><span class="panel-kicker">ÉQUIPE</span><h3>Salaires & commissions</h3><p>Calcule le salaire prévu à partir du fixe + commission sur CA. Le paiement crée un instantané pour la semaine sélectionnée.</p></div><button id="addEmployeeBtn" class="btn primary">+ Employé</button></div>
+        <div class="section-intro"><div><span class="panel-kicker">ÉQUIPE</span><h3>Employés & comptes</h3><p>Deux pôles : Vente et Pompistes. La Direction crée les comptes et ouvre la fiche complète d’un employé en cliquant sur son nom.</p></div><div class="row-actions"><button id="refreshStaffBtn" class="btn ghost">Actualiser</button><button id="createEmployeeAccountBtn" class="btn primary">+ Créer un compte</button></div></div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">ANNUAIRE</span><h3>Comptes employés</h3></div><span class="status info">Direction uniquement</span></div><div id="staffDirectory" class="staff-directory"><div class="empty-state"><strong>Chargement des comptes…</strong></div></div></article>
+        <div class="section-intro payroll-subtitle"><div><span class="panel-kicker">RÉMUNÉRATION</span><h3>Salaires & commissions</h3><p>Le CA vendeur viendra des factures Discord payées. Les règles de salaire restent paramétrables.</p></div><button id="addEmployeeBtn" class="btn ghost">+ Ligne salaire locale</button></div>
         <div class="kpi-grid three"><article class="kpi-card"><span>Prévision</span><strong id="payrollForecast">0 $</strong><small>semaine sélectionnée</small></article><article class="kpi-card"><span>Déjà versé</span><strong id="payrollPaid">0 $</strong><small id="payrollPaidCount">0 paiement</small></article><article class="kpi-card"><span>Reste à verser</span><strong id="payrollRemaining">0 $</strong><small>prévision - versé</small></article></div>
         <article class="panel"><div class="table-wrap"><table><thead><tr><th>Employé</th><th>Poste</th><th class="right">CA</th><th class="right">Commission</th><th class="right">Fixe</th><th class="right">Salaire prévu</th><th>Statut</th><th></th></tr></thead><tbody id="employeesBody"></tbody></table></div></article>
       </section>
 
+
+      <section id="employeeProfile" class="page">
+        <div class="section-intro"><div><button id="backToEmployeesBtn" class="text-btn">← Retour aux employés</button><span class="panel-kicker">FICHE EMPLOYÉ</span><h3 id="employeeProfileName">Employé</h3><p id="employeeProfileSubtitle">Informations détaillées</p></div><button id="editEmployeeProfileBtn" class="btn primary">Modifier la fiche</button></div>
+        <div class="profile-grid">
+          <article class="panel profile-main-card"><div class="profile-avatar" id="employeeProfileAvatar">?</div><div><span id="employeeProfilePole" class="status info">Pôle</span><h3 id="employeeProfileRole">—</h3><p id="employeeProfileUsername" class="muted">—</p></div></article>
+          <article class="kpi-card"><span>Heures de service</span><strong id="employeeProfileHours">0 h</strong><small>sessions synchronisées</small></article>
+          <article class="kpi-card"><span>CA factures</span><strong id="employeeProfileCA">0 $</strong><small>factures attribuées</small></article>
+          <article class="kpi-card"><span>Production</span><strong id="employeeProfileProduction">0</strong><small>unités fabriquées</small></article>
+        </div>
+        <div class="dashboard-grid">
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">IDENTITÉ</span><h3>Informations RH</h3></div></div><div id="employeeProfileInfo" class="profile-info"></div></article>
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">HISTORIQUE</span><h3>Événements RH</h3></div></div><div id="employeeProfileHr" class="timeline-list"></div></article>
+        </div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">ACTIVITÉ</span><h3>Services & mouvements</h3></div></div><div id="employeeProfileActivity" class="timeline-list"></div></article>
+      </section>
+
       <section id="fuel" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">PÔLE POMPISTES</span><h3>Stations approvisionnées</h3><p>6 stations suivies. Les ravitaillements sont destinés à être mis à jour automatiquement depuis les logs IG/Discord.</p></div><button id="refreshStationsBtn" class="btn ghost">Actualiser</button></div>
+        <div id="stationsGrid" class="stations-grid"><div class="empty-state"><strong>Chargement des stations…</strong></div></div>
         <div class="fuel-layout">
           <article class="panel fuel-calculator">
             <div class="panel-head"><div><span class="panel-kicker">CALCULATEUR</span><h3>Commande d’essence</h3></div><span class="status info">15 L / bidon</span></div>
