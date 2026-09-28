@@ -1,6 +1,7 @@
 const ACCESS_CODE = 'D42TAT';
 const STORAGE_KEY = 'ltd_sandy_compta_v1';
 const SESSION_KEY = 'ltd_sandy_compta_session';
+const THEME_KEY = 'ltd_sandy_theme';
 const CLOUD_ROW_ID = 'main';
 
 const DEFAULT_BRACKETS = [
@@ -53,6 +54,26 @@ const money = n => `${Math.round(Number(n)||0).toLocaleString('fr-FR')} $`;
 const number = n => (Number(n)||0).toLocaleString('fr-FR');
 const uid = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2,8)}`;
 const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
+function applyTheme(theme){
+  const mode = theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = mode;
+  localStorage.setItem(THEME_KEY, mode);
+  const icon = $('#themeIcon');
+  const label = $('#themeText');
+  if(icon) icon.textContent = mode === 'dark' ? '☀' : '☾';
+  if(label) label.textContent = mode === 'dark' ? 'Clair' : 'Sombre';
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if(meta) meta.setAttribute('content', mode === 'dark' ? '#07121c' : '#f4efe8');
+}
+function initTheme(){
+  let saved = 'dark';
+  try{ saved = localStorage.getItem(THEME_KEY) || document.documentElement.dataset.theme || 'dark'; }catch{}
+  applyTheme(saved);
+}
+function toggleTheme(){
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+}
 
 function mondayOf(date = new Date()) {
   const d = new Date(date); d.setHours(0,0,0,0);
@@ -207,6 +228,7 @@ function bindEvents(){
   $('#loginForm').onsubmit=async e=>{e.preventDefault();if($('#accessCode').value.trim()!==ACCESS_CODE){$('#loginError').classList.remove('hidden');return}sessionStorage.setItem(SESSION_KEY,'1');$('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');await setupCloud();await loadState();renderAll()};
   $('#toggleCode').onclick=()=>{const i=$('#accessCode');i.type=i.type==='password'?'text':'password';$('#toggleCode').textContent=i.type==='password'?'Afficher':'Masquer'};
   $('#logoutBtn').onclick=()=>{sessionStorage.removeItem(SESSION_KEY);location.reload()}; $('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
+  $('#themeToggle').onclick=toggleTheme;
   $$('.nav-item[data-page]').forEach(b=>b.onclick=()=>showPage(b.dataset.page)); $$('[data-goto]').forEach(b=>b.onclick=()=>showPage(b.dataset.goto)); $('#weekSelect').onchange=renderAll; $('#quickAddBtn').onclick=operationModal;$('#addOperationBtn').onclick=operationModal;$('#opSearch').oninput=renderOperations;$('#opTypeFilter').onchange=renderOperations;$('#addEmployeeBtn').onclick=()=>employeeModal();
   $('#fuelLiters').oninput=fuelCalc;$('#fuelRate').onchange=fuelCalc;$('#fuelForm').onsubmit=async e=>{e.preventDefault();const x=fuelCalc();if(!x.liters)return;const id=uid(),date=new Date().toISOString(),client=$('#fuelClient').value.trim(),rate=$('#fuelRate').value,note=$('#fuelNote').value.trim();state.fuelOrders.push({id,date,client,liters:x.liters,cans:x.cans,price:x.price,total:x.total,rate,note});state.transactions.push({id:uid(),fuelOrderId:id,date,type:'income',label:`Essence — ${client}`,category:'fuel',amount:x.total,deductible:false,note:`${x.liters} L · ${x.cans} bidons${note?` · ${note}`:''}`});await saveState();e.target.reset();$('#fuelRate').value='normal';renderAll();toast('Commande essence enregistrée')};
   $('#closeWeekBtn').onclick=closeWeek;$('#backupBtn').onclick=()=>downloadJson(state,`ltd-sandy-backup-${isoDate(new Date())}.json`);$('#exportJsonBtn').onclick=()=>downloadJson(state);$('#exportCsvBtn').onclick=exportCsv;$('#importJsonInput').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;try{const raw=JSON.parse(await f.text());state=mergeState(raw);await saveState();renderAll();toast('Sauvegarde importée')}catch{toast('Fichier JSON invalide','error')}e.target.value=''};
@@ -216,6 +238,7 @@ function bindEvents(){
   $('#wipeBtn').onclick=async()=>{if(confirm('Effacer TOUTES les données comptables de ce nouveau site ?')){state=structuredClone(DEFAULT_STATE);await saveState();renderAll();toast('Données effacées')}}; $('#modalBackdrop').onclick=e=>{if(e.target===$('#modalBackdrop'))closeModal()};
 }
 
+initTheme();
 bindEvents();
 if(sessionStorage.getItem(SESSION_KEY)==='1'){
   $('#loginScreen').classList.add('hidden');$('#app').classList.remove('hidden');
