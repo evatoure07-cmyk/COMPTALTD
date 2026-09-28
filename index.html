@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#17110e" />
+  <title>Comptabilité — LTD Sandy Shores</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="brand-mark">LTD</div>
+      <div class="eyebrow">SANDY SHORES</div>
+      <h1>Comptabilité</h1>
+      <p>Accès direction · gestion financière indépendante</p>
+      <form id="loginForm" class="login-form">
+        <label for="accessCode">Code d’accès</label>
+        <div class="password-wrap">
+          <input id="accessCode" type="password" autocomplete="off" placeholder="••••••" required />
+          <button id="toggleCode" type="button" aria-label="Afficher le code">Afficher</button>
+        </div>
+        <button class="btn primary full" type="submit">Ouvrir la comptabilité</button>
+        <p id="loginError" class="form-error hidden">Code incorrect.</p>
+      </form>
+      <div class="login-footer">LTD Sandy Shores · San Andreas</div>
+    </div>
+  </div>
+
+  <div id="app" class="app hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="side-brand">
+        <div class="side-logo">LTD</div>
+        <div><strong>Sandy Shores</strong><span>Comptabilité</span></div>
+      </div>
+      <nav id="mainNav">
+        <button class="nav-item active" data-page="dashboard"><span>⌂</span> Tableau de bord</button>
+        <button class="nav-item" data-page="operations"><span>↕</span> Opérations</button>
+        <button class="nav-item" data-page="payroll"><span>◎</span> Salaires</button>
+        <button class="nav-item" data-page="fuel"><span>⛽</span> Essence</button>
+        <button class="nav-item" data-page="fiscal"><span>§</span> Fiscalité</button>
+        <button class="nav-item" data-page="archives"><span>▣</span> Archives</button>
+        <button class="nav-item" data-page="settings"><span>⚙</span> Paramètres État</button>
+      </nav>
+      <div class="side-bottom">
+        <div id="cloudBadge" class="cloud-badge local">● Sauvegarde locale</div>
+        <button id="logoutBtn" class="nav-item logout"><span>↪</span> Déconnexion</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="menuBtn" class="icon-btn mobile-only">☰</button>
+        <div>
+          <p id="pageEyebrow" class="eyebrow">GESTION FINANCIÈRE</p>
+          <h2 id="pageTitle">Tableau de bord</h2>
+        </div>
+        <div class="top-actions">
+          <select id="weekSelect" class="compact-select" title="Semaine"></select>
+          <button id="backupBtn" class="btn ghost">Sauvegarder</button>
+          <button id="quickAddBtn" class="btn primary">+ Opération</button>
+        </div>
+      </header>
+
+      <section id="dashboard" class="page active">
+        <div class="hero-panel">
+          <div>
+            <span class="hero-kicker">SITUATION DE LA SEMAINE</span>
+            <h3 id="heroWeek">—</h3>
+            <p id="heroSummary">Aucune donnée enregistrée.</p>
+          </div>
+          <div class="hero-balance">
+            <span>Résultat net</span>
+            <strong id="heroNet">0 $</strong>
+            <small id="heroMargin">Marge —</small>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <article class="kpi-card"><span>Chiffre d’affaires</span><strong id="kpiRevenue">0 $</strong><small id="kpiRevenueSub">0 opération</small></article>
+          <article class="kpi-card"><span>Dépenses</span><strong id="kpiExpenses">0 $</strong><small id="kpiDeductible">0 $ déductibles</small></article>
+          <article class="kpi-card"><span>Masse salariale</span><strong id="kpiPayroll">0 $</strong><small id="kpiPayrollRatio">0 % du CA</small></article>
+          <article class="kpi-card"><span>Impôt estimé</span><strong id="kpiTax">0 $</strong><small id="kpiTaxRate">Taux 0 %</small></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel chart-panel">
+            <div class="panel-head"><div><span class="panel-kicker">ACTIVITÉ</span><h3>Entrées / sorties</h3></div><span class="muted">7 derniers jours</span></div>
+            <div id="miniChart" class="mini-chart"></div>
+          </article>
+          <article class="panel compliance-panel">
+            <div class="panel-head"><div><span class="panel-kicker">CONFORMITÉ</span><h3>Contrôle rapide</h3></div><span id="complianceBadge" class="status ok">OK</span></div>
+            <div id="complianceList" class="check-list"></div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head"><div><span class="panel-kicker">JOURNAL</span><h3>Dernières opérations</h3></div><button class="text-btn" data-goto="operations">Voir tout →</button></div>
+          <div class="table-wrap"><table><thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Type</th><th class="right">Montant</th></tr></thead><tbody id="recentOpsBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="operations" class="page">
+        <article class="panel">
+          <div class="panel-head wrap"><div><span class="panel-kicker">LIVRE DE COMPTE</span><h3>Recettes & dépenses</h3></div><div class="filters"><input id="opSearch" class="compact-input" placeholder="Rechercher…" /><select id="opTypeFilter" class="compact-select"><option value="all">Tous</option><option value="income">Recettes</option><option value="expense">Dépenses</option><option value="subsidy">Subventions</option><option value="tax">Impôts payés</option></select><button id="addOperationBtn" class="btn primary">+ Ajouter</button></div></div>
+          <div class="table-wrap"><table><thead><tr><th>Date</th><th>Libellé</th><th>Catégorie</th><th>Déductible</th><th>Note</th><th class="right">Montant</th><th></th></tr></thead><tbody id="operationsBody"></tbody></table></div>
+        </article>
+      </section>
+
+      <section id="payroll" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">ÉQUIPE</span><h3>Salaires & commissions</h3><p>Calcule le salaire prévu à partir du fixe + commission sur CA. Le paiement crée un instantané pour la semaine sélectionnée.</p></div><button id="addEmployeeBtn" class="btn primary">+ Employé</button></div>
+        <div class="kpi-grid three"><article class="kpi-card"><span>Prévision</span><strong id="payrollForecast">0 $</strong><small>semaine sélectionnée</small></article><article class="kpi-card"><span>Déjà versé</span><strong id="payrollPaid">0 $</strong><small id="payrollPaidCount">0 paiement</small></article><article class="kpi-card"><span>Reste à verser</span><strong id="payrollRemaining">0 $</strong><small>prévision - versé</small></article></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>Employé</th><th>Poste</th><th class="right">CA</th><th class="right">Commission</th><th class="right">Fixe</th><th class="right">Salaire prévu</th><th>Statut</th><th></th></tr></thead><tbody id="employeesBody"></tbody></table></div></article>
+      </section>
+
+      <section id="fuel" class="page">
+        <div class="fuel-layout">
+          <article class="panel fuel-calculator">
+            <div class="panel-head"><div><span class="panel-kicker">CALCULATEUR</span><h3>Commande d’essence</h3></div><span class="status info">15 L / bidon</span></div>
+            <form id="fuelForm" class="form-grid">
+              <label class="span-2">Entreprise / client<input id="fuelClient" required placeholder="Ex : Auto Exotic" /></label>
+              <label>Litres commandés<input id="fuelLiters" type="number" min="1" step="1" required placeholder="3000" /></label>
+              <label>Tarif<select id="fuelRate"><option value="normal">Normal</option><option value="partner">Partenaire</option></select></label>
+              <div class="fuel-result span-2"><div><span>Bidons</span><strong id="fuelCans">0</strong></div><div><span>Prix / bidon</span><strong id="fuelCanPrice">60 $</strong></div><div><span>Total</span><strong id="fuelTotal">0 $</strong></div></div>
+              <label class="span-2">Note<input id="fuelNote" placeholder="Optionnel" /></label>
+              <button class="btn primary span-2" type="submit">Enregistrer la commande</button>
+            </form>
+          </article>
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">COMMANDES</span><h3>Historique essence</h3></div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Client</th><th class="right">Litres</th><th class="right">Bidons</th><th>Tarif</th><th class="right">Total</th><th></th></tr></thead><tbody id="fuelBody"></tbody></table></div></article>
+        </div>
+      </section>
+
+      <section id="fiscal" class="page">
+        <div class="fiscal-banner"><div><span class="hero-kicker">CODE DES TAXES, DU TRAVAIL ET DES ENTREPRISES</span><h3>Préparation fiscale</h3><p>Calcul indicatif à partir des opérations de la semaine. Vérifie toujours les données avant déclaration.</p></div><div class="fiscal-big"><span>Résultat imposable</span><strong id="taxableResult">0 $</strong></div></div>
+        <div class="kpi-grid"><article class="kpi-card"><span>CA imposable</span><strong id="fiscalRevenue">0 $</strong><small>hors subventions</small></article><article class="kpi-card"><span>Charges déductibles</span><strong id="fiscalDeductible">0 $</strong><small>salaires inclus</small></article><article class="kpi-card"><span>Non déductible</span><strong id="fiscalNonDeductible">0 $</strong><small>information audit</small></article><article class="kpi-card"><span>Impôt estimé</span><strong id="fiscalTax">0 $</strong><small id="fiscalRate">taux 0 %</small></article></div>
+        <div class="dashboard-grid">
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">VENTILATION</span><h3>Charges par catégorie</h3></div></div><div id="deductibleBreakdown" class="breakdown"></div></article>
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">MASSE SALARIALE</span><h3>Ratio de conformité</h3></div><span id="massBadge" class="status ok">OK</span></div><div class="gauge"><div id="massGaugeFill" class="gauge-fill"></div></div><div class="gauge-meta"><strong id="massRatio">0 %</strong><span id="massRule">Alerte à 85 % · plafond 90 %</span></div></article>
+        </div>
+        <article class="panel"><div class="panel-head"><div><span class="panel-kicker">TRANCHES</span><h3>Barème utilisé</h3></div><button class="text-btn" data-goto="settings">Modifier →</button></div><div id="taxBracketsView" class="brackets"></div></article>
+      </section>
+
+      <section id="archives" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">CLÔTURE</span><h3>Archives hebdomadaires</h3><p>Fige un instantané de la semaine sans supprimer les opérations d’origine.</p></div><button id="closeWeekBtn" class="btn primary">Clôturer la semaine</button></div>
+        <article class="panel"><div class="table-wrap"><table><thead><tr><th>Semaine</th><th>Clôturée le</th><th class="right">CA</th><th class="right">Dépenses</th><th class="right">Salaires</th><th class="right">Impôt estimé</th><th class="right">Net</th><th></th></tr></thead><tbody id="archivesBody"></tbody></table></div></article>
+      </section>
+
+      <section id="settings" class="page">
+        <div class="section-intro"><div><span class="panel-kicker">RÈGLES</span><h3>Paramètres État & entreprise</h3><p>Tout est modifiable ici sans toucher au code du site.</p></div></div>
+        <div class="settings-grid">
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">ENTREPRISE</span><h3>Paramètres généraux</h3></div></div><form id="generalSettingsForm" class="form-grid"><label>Solde de départ ($)<input id="initialBalance" type="number" step="1" /></label><label>Devise<input value="$" disabled /></label><label>Volume d’un bidon (L)<input id="fuelCanLitersSetting" type="number" min="1" /></label><label>Tarif normal / bidon<input id="fuelNormalPriceSetting" type="number" step="0.01" /></label><label>Tarif partenaire / bidon<input id="fuelPartnerPriceSetting" type="number" step="0.01" /></label><label>Seuil masse salariale (%)<input id="payrollWarnSetting" type="number" min="0" max="100" /></label><label>Plafond masse salariale (%)<input id="payrollMaxSetting" type="number" min="0" max="100" /></label><button class="btn primary span-2" type="submit">Enregistrer les paramètres</button></form></article>
+          <article class="panel"><div class="panel-head"><div><span class="panel-kicker">PLAFONDS</span><h3>Déductibilité</h3></div></div><form id="deductionSettingsForm" class="form-grid"><label>Avocat — plafond déductible<input id="lawyerCapSetting" type="number" min="0" /></label><label>Comptable — plafond déductible<input id="accountantCapSetting" type="number" min="0" /></label><p class="settings-note span-2">Les paiements d’impôt sont exclus de l’assiette. Les subventions sont enregistrées séparément et ne sont pas comptées dans le CA imposable.</p><button class="btn primary span-2" type="submit">Enregistrer les plafonds</button></form></article>
+        </div>
+        <article class="panel"><div class="panel-head wrap"><div><span class="panel-kicker">BARÈME</span><h3>Tranches d’impôt</h3></div><button id="addBracketBtn" class="btn ghost">+ Tranche</button></div><div id="taxBracketsEditor" class="bracket-editor"></div><div class="row-actions"><button id="saveBracketsBtn" class="btn primary">Enregistrer le barème</button><button id="resetBracketsBtn" class="btn ghost">Rétablir le barème LTD</button></div></article>
+        <article class="panel danger-zone"><div><span class="panel-kicker">DONNÉES</span><h3>Sauvegarde & restauration</h3><p>Exporte régulièrement les données si tu restes en mode local. Pour plusieurs PC, active le mode Supabase fourni dans le dossier.</p></div><div class="row-actions"><button id="exportJsonBtn" class="btn ghost">Exporter JSON</button><label class="btn ghost file-btn">Importer JSON<input id="importJsonInput" type="file" accept="application/json" /></label><button id="exportCsvBtn" class="btn ghost">Exporter CSV</button><button id="wipeBtn" class="btn danger">Effacer les données</button></div></article>
+      </section>
+    </main>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="cloud-config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
